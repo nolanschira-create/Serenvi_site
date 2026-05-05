@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Serenvo · Devenir Cliente Signature</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0908;
+    color: #f8f3ea;
+    font-family: 'Inter', -apple-system, sans-serif;
+    line-height: 1.7;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+  .cormorant { font-family: 'Cormorant Garamond', serif; }
+  em { font-style: italic; color: #e4c989; font-weight: 400; }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes letterReveal {
+    0% { opacity: 0; transform: translateY(40px) scale(0.9); filter: blur(8px); }
+    60% { opacity: 1; filter: blur(0); }
+    100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+  @keyframes lineGrow { from { width: 0; } to { width: 200px; } }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(201, 169, 97, 0.4); }
+    50% { box-shadow: 0 0 0 14px rgba(201, 169, 97, 0); }
+  }
+
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: block; animation: fadeIn 0.6s ease both; }
+  .grid-bg {
+    background-image:
+      linear-gradient(rgba(201, 169, 97, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(201, 169, 97, 0.04) 1px, transparent 1px);
+    background-size: 80px 80px;
+  }
+
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 24px;
+    background: radial-gradient(ellipse at center, rgba(201,169,97,0.1) 0%, transparent 60%), #0a0908;
+    position: relative;
+  }
+  .hero-content { position: relative; z-index: 2; text-align: center; max-width: 700px; }
+  .hero-logo-mark {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(4rem, 10vw, 7rem);
+    font-weight: 300;
+    color: #f8f3ea;
+    line-height: 1;
+    margin-bottom: 24px;
+    opacity: 0;
+    animation: fadeIn 1s ease 0.3s forwards;
+    text-shadow: 0 0 40px rgba(201, 169, 97, 0.4);
+  }
+  .hero-logo-mark span { color: #e4c989; }
+  .hero-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.4rem, 5vw, 3.6rem);
+    font-weight: 300;
+    letter-spacing: 0.4em;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: center;
+    gap: 0.05em;
+  }
+  .hero-name .letter {
+    display: inline-block;
+    opacity: 0;
+    background: linear-gradient(90deg, #f8f3ea 0%, #f8f3ea 20%, #e4c989 35%, #c9a961 50%, #e4c989 65%, #f8f3ea 80%, #f8f3ea 100%);
+    background-size: 200% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: letterReveal 0.8s cubic-bezier(0.22, 1, 0.36, 1) both, shimmer 4s ease-in-out infinite;
+  }
+  .hero-name .letter:nth-child(1) { animation-delay: 0.6s, 3s; }
+  .hero-name .letter:nth-child(2) { animation-delay: 0.75s, 3.1s; }
+  .hero-name .letter:nth-child(3) { animation-delay: 0.9s, 3.2s; }
+  .hero-name .letter:nth-child(4) { animation-delay: 1.05s, 3.3s; }
+  .hero-name .letter:nth-child(5) { animation-delay: 1.2s, 3.4s; }
+  .hero-name .letter:nth-child(6) { animation-delay: 1.35s, 3.5s; }
+  .hero-name .letter:nth-child(7) { animation-delay: 1.5s, 3.6s; }
+  .hero-line {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #c9a961, transparent);
+    margin: 32px auto;
+    width: 0;
+    animation: lineGrow 1.4s cubic-bezier(0.22, 1, 0.36, 1) 2.2s forwards;
+  }
+  .hero-tagline {
+    font-size: 11px;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: #e4c989;
+    margin-bottom: 40px;
+    opacity: 0;
+    animation: fadeUp 1s cubic-bezier(0.22, 1, 0.36, 1) 2.6s forwards;
+  }
+  .hero-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    color: #f8f3ea;
+    font-weight: 300;
+    line-height: 1.3;
+    margin-bottom: 16px;
+    opacity: 0;
+    animation: fadeUp 1s cubic-bezier(0.22, 1, 0.36, 1) 3s forwards;
+  }
+  .hero-sub {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1rem, 1.6vw, 1.2rem);
+    color: #d8cfc1;
+    font-style: italic;
+    margin: 0 auto 48px;
+    line-height: 1.6;
+    opacity: 0;
+    animation: fadeUp 1s cubic-bezier(0.22, 1, 0.36, 1) 3.4s forwards;
+  }
+  .hero-btn {
+    opacity: 0;
+    animation: fadeUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) 3.8s forwards, pulse 2.5s ease-in-out 5s infinite;
+  }
+
+  .intro {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 24px;
+  }
+  .intro-content { max-width: 760px; }
+  .intro-eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: #c9a961;
+    margin-bottom: 32px;
+    text-align: center;
+  }
+  .intro-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 300;
+    line-height: 1.2;
+    margin-bottom: 40px;
+    text-align: center;
+  }
+  .intro-card {
+    padding: 50px 40px;
+    background: linear-gradient(135deg, rgba(201, 169, 97, 0.04) 0%, rgba(201, 169, 97, 0.01) 100%);
+    border: 1px solid rgba(201, 169, 97, 0.2);
+    margin-bottom: 48px;
+    position: relative;
+  }
+  .intro-card::before, .intro-card::after {
+    content: '';
+    position: absolute;
+    width: 32px; height: 32px;
+    border: 1px solid #c9a961;
+  }
+  .intro-card::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+  .intro-card::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+  .intro-card p {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.15rem;
+    color: #d8cfc1;
+    line-height: 1.8;
+    margin-bottom: 20px;
+    font-style: italic;
+  }
+  .intro-card p:last-child { margin-bottom: 0; }
+  .intro-card .highlight { color: #e4c989; font-style: normal; font-weight: 500; }
+  .intro-cta { text-align: center; }
+
+  .form-wrap { min-height: 100vh; padding: 40px 24px 60px; }
+  .form-container { max-width: 760px; margin: 0 auto; }
+  .stepbar { display: flex; gap: 4px; margin-bottom: 12px; }
+  .stepbar-segment {
+    flex: 1;
+    height: 2px;
+    background: rgba(201,169,97,0.15);
+    transition: background 0.5s;
+  }
+  .stepbar-segment.active { background: #c9a961; }
+  .stepbar-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 50px;
+  }
+  .step-label {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #c9a961;
+  }
+  .step-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem;
+    font-style: italic;
+    color: #e4c989;
+  }
+  .step-content { animation: fadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .step-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+    font-weight: 300;
+    line-height: 1.25;
+    margin-bottom: 16px;
+  }
+  .step-desc { color: #8a8278; margin-bottom: 40px; font-size: 0.95rem; }
+
+  .input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(201, 169, 97, 0.3);
+    color: #f8f3ea;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    padding: 12px 0;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+  .input:focus { border-bottom-color: #c9a961; }
+  .input::placeholder { color: #5a544a; font-style: italic; }
+  .textarea {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(201, 169, 97, 0.2);
+    color: #f8f3ea;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    padding: 16px;
+    width: 100%;
+    outline: none;
+    min-height: 140px;
+    resize: vertical;
+    transition: border-color 0.3s;
+  }
+  .textarea:focus { border-color: #c9a961; }
+  .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+  @media (max-width: 600px) { .input-row { grid-template-columns: 1fr; gap: 24px; } }
+
+  .cards-grid { display: grid; gap: 14px; }
+  .card {
+    padding: 22px 28px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%);
+    border: 1px solid rgba(201, 169, 97, 0.15);
+    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .card:hover {
+    border-color: rgba(201, 169, 97, 0.5);
+    transform: translateY(-2px);
+    background: linear-gradient(180deg, rgba(201, 169, 97, 0.05) 0%, rgba(201, 169, 97, 0) 100%);
+  }
+  .card.selected {
+    border-color: #c9a961;
+    background: linear-gradient(180deg, rgba(201, 169, 97, 0.12) 0%, rgba(201, 169, 97, 0.04) 100%);
+    box-shadow: 0 0 0 1px #c9a961, 0 8px 24px rgba(201, 169, 97, 0.15);
+  }
+  .card-radio {
+    width: 18px; height: 18px;
+    border: 1px solid #c9a961;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .card.selected .card-radio::after {
+    content: '';
+    width: 8px; height: 8px;
+    background: #c9a961;
+    border-radius: 50%;
+  }
+  .card-content { flex: 1; }
+  .card-title { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; color: #f8f3ea; }
+  .card-desc { font-size: 0.82rem; color: #8a8278; margin-top: 4px; }
+
+  .signature-wrap {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(201, 169, 97, 0.4);
+    padding: 16px;
+    position: relative;
+    margin-bottom: 16px;
+  }
+  .signature-wrap::before, .signature-wrap::after {
+    content: '';
+    position: absolute;
+    width: 24px; height: 24px;
+    border: 1px solid #c9a961;
+  }
+  .signature-wrap::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+  .signature-wrap::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+  #signatureCanvas {
+    width: 100%;
+    height: 200px;
+    cursor: crosshair;
+    touch-action: none;
+    background: #fefdf9;
+    display: block;
+  }
+  .signature-hint { text-align: center; color: #8a8278; font-size: 0.85rem; font-style: italic; margin-top: 12px; }
+  .signature-actions { text-align: center; margin-top: 16px; }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 36px;
+    background: transparent;
+    color: #e4c989;
+    border: 1px solid #c9a961;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    font-weight: 500;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s;
+    text-decoration: none;
+  }
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: #c9a961;
+    transform: translateX(-101%);
+    transition: transform 0.4s;
+    z-index: 0;
+  }
+  .btn-primary span { position: relative; z-index: 1; transition: color 0.4s; }
+  .btn-primary:hover { color: #0a0908; }
+  .btn-primary:hover::before { transform: translateX(0); }
+  .btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
+  .btn-primary:disabled:hover { color: #e4c989; }
+  .btn-primary:disabled:hover::before { transform: translateX(-101%); }
+
+  .btn-secondary {
+    padding: 14px 28px;
+    background: transparent;
+    color: #d8cfc1;
+    border: 1px solid rgba(201, 169, 97, 0.2);
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .btn-secondary:hover { border-color: #c9a961; color: #e4c989; }
+
+  .nav-buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 60px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .nav-spacer { flex: 1; }
+
+  .final-wrap {
+    min-height: 100vh;
+    padding: 60px 24px;
+    background: radial-gradient(ellipse at top, rgba(201,169,97,0.08) 0%, transparent 60%), #0a0908;
+  }
+  .final-container { max-width: 880px; margin: 0 auto; }
+  .final-header { text-align: center; margin-bottom: 60px; }
+  .final-mark { font-size: 2rem; color: #c9a961; font-style: italic; margin-bottom: 24px; }
+  .final-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 300;
+    line-height: 1.2;
+    margin-bottom: 20px;
+  }
+  .final-desc {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.15rem;
+    color: #d8cfc1;
+    font-style: italic;
+    line-height: 1.7;
+    max-width: 580px;
+    margin: 0 auto;
+  }
+  .demande-num-box {
+    padding: 32px;
+    border: 1px solid rgba(201,169,97,0.3);
+    background: linear-gradient(135deg, rgba(201,169,97,0.08) 0%, rgba(201,169,97,0.02) 100%);
+    text-align: center;
+    margin-bottom: 50px;
+    position: relative;
+  }
+  .demande-num-box::before, .demande-num-box::after {
+    content: '';
+    position: absolute;
+    width: 24px; height: 24px;
+    border: 1px solid #c9a961;
+  }
+  .demande-num-box::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+  .demande-num-box::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+  .demande-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    color: #e4c989;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    margin: 8px 0;
+  }
+  .demande-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem;
+    font-style: italic;
+    color: #f8f3ea;
+  }
+  .paths-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 40px;
+  }
+  @media (max-width: 700px) { .paths-grid { grid-template-columns: 1fr; } }
+  .path-card {
+    padding: 40px 32px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%);
+    border: 1px solid rgba(201, 169, 97, 0.15);
+    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    cursor: pointer;
+    text-align: center;
+  }
+  .path-card:hover {
+    border-color: #c9a961;
+    transform: translateY(-4px);
+    background: linear-gradient(180deg, rgba(201, 169, 97, 0.06) 0%, rgba(201, 169, 97, 0) 100%);
+  }
+  .path-icon { font-size: 2rem; color: #c9a961; margin-bottom: 20px; }
+  .path-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem;
+    color: #f8f3ea;
+    margin-bottom: 14px;
+    line-height: 1.3;
+  }
+  .path-title em { font-style: italic; color: #e4c989; }
+  .path-desc {
+    font-size: 0.9rem;
+    color: #8a8278;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+  .path-cta {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #e4c989;
+    padding-top: 16px;
+    border-top: 1px solid rgba(201, 169, 97, 0.15);
+  }
+  .questions-section {
+    padding: 32px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(201,169,97,0.2);
+    margin-bottom: 32px;
+  }
+  .questions-section h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    color: #f8f3ea;
+    margin-bottom: 8px;
+  }
+  .questions-section h3 em { font-style: italic; color: #e4c989; }
+  .recap-footer {
+    text-align: center;
+    padding-top: 40px;
+    margin-top: 40px;
+    border-top: 1px solid rgba(201,169,97,0.15);
+  }
+  .recap-footer-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    color: #e4c989;
+    letter-spacing: 0.4em;
+    margin-bottom: 8px;
+  }
+  .recap-footer-tag {
+    font-size: 10px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: #8a8278;
+  }
+  .center { text-align: center; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="screen active grid-bg" id="hero">
+  <div class="hero">
+    <div class="hero-content">
+      <div class="hero-logo-mark"><span>S</span>R</div>
+      <div class="hero-name">
+        <span class="letter">S</span><span class="letter">E</span><span class="letter">R</span><span class="letter">E</span><span class="letter">N</span><span class="letter">V</span><span class="letter">O</span>
+      </div>
+      <div class="hero-line"></div>
+      <div class="hero-tagline">— Cliente Signature —</div>
+      <h1 class="hero-title">Demandez votre <em>accès privilégié</em>.</h1>
+      <p class="hero-sub">
+        Une expérience d'achat haut de gamme,<br>
+        pensée pour celles qui font de l'exception un art de vivre.
+      </p>
+      <button class="btn-primary hero-btn" onclick="goToScreen('intro')">
+        <span>◆ Commencer ma demande</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- INTRO -->
+<div class="screen" id="intro">
+  <div class="intro">
+    <div class="intro-content">
+      <div class="intro-eyebrow">◆ Avant de commencer</div>
+      <h2 class="intro-title">Bienvenue dans le programme <em>Cliente Signature</em>.</h2>
+      <div class="intro-card">
+        <p>
+          Vous souhaitez faire votre demande pour <span class="highlight">grandir avec Serenvo</span>,
+          accéder à nos avantages exclusifs et être accompagnée à chaque étape de votre parcours luxe.
+        </p>
+        <p>
+          Ce formulaire nous permet de mieux vous connaître afin de vous offrir
+          une expérience à la hauteur de vos attentes : choix éclairés, conseils personnalisés,
+          et réponses précises à toutes vos interrogations.
+        </p>
+        <p>
+          <span class="highlight">À l'issue de votre demande</span>, vous pourrez choisir d'échanger avec nous
+          ou de formuler directement votre première recherche personnalisée d'article.
+        </p>
+      </div>
+      <div class="intro-cta">
+        <button class="btn-primary" onclick="startForm()">
+          <span>Composer ma demande</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FORMULAIRE -->
+<div class="screen" id="form">
+  <div class="form-wrap">
+    <div class="form-container">
+      <div class="stepbar" id="stepbar"></div>
+      <div class="stepbar-info">
+        <span class="step-label">Étape <span id="stepNum">1</span> / 8</span>
+        <span class="step-name cormorant" id="stepName">Identité</span>
+      </div>
+      <div id="stepContent" class="step-content"></div>
+      <div class="nav-buttons">
+        <button class="btn-secondary hidden" id="btnPrev" onclick="prevStep()">← Précédent</button>
+        <div class="nav-spacer"></div>
+        <button class="btn-primary" id="btnNext" onclick="nextStep()">
+          <span id="btnNextText">Suivant →</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE FINALE -->
+<div class="screen" id="finale">
+  <div class="final-wrap grid-bg">
+    <div class="final-container">
+      <div class="final-header">
+        <div class="final-mark">◆</div>
+        <h1 class="final-title">
+          Merci, <em id="finalPrenom"></em>,<br>
+          pour votre confiance.
+        </h1>
+        <p class="final-desc">
+          Votre demande Cliente Signature a été soigneusement enregistrée.<br>
+          Choisissez maintenant comment vous souhaitez poursuivre votre parcours.
+        </p>
+      </div>
+
+      <div class="demande-num-box">
+        <div class="step-label" style="margin-bottom: 8px;">Demande référencée</div>
+        <div class="demande-num" id="finalNumero"></div>
+        <div class="demande-name" id="finalName"></div>
+      </div>
+
+      <div id="pathChoiceSection">
+        <div class="paths-grid">
+          <div class="path-card" onclick="selectPath('discuss')">
+            <div class="path-icon">✦</div>
+            <h3 class="path-title">Je préfère <em>échanger</em> avec vous d'abord</h3>
+            <p class="path-desc">
+              Posez vos questions, partagez vos doutes, prenons le temps de la conversation
+              avant toute demande personnalisée.
+            </p>
+            <div class="path-cta">Échanger sur WhatsApp →</div>
+          </div>
+
+          <div class="path-card" onclick="selectPath('request')">
+            <div class="path-icon">◇</div>
+            <h3 class="path-title">Je fais ma <em>première demande</em> maintenant</h3>
+            <p class="path-desc">
+              Composez directement votre recherche personnalisée d'article via notre
+              simulateur dédié, en toute simplicité.
+            </p>
+            <div class="path-cta">Accéder au simulateur →</div>
+          </div>
+        </div>
+
+        <p class="center" style="margin-top: 24px; font-size: 0.85rem; color: #8a8278; font-style: italic;">
+          ✦ Cela ne vous engage en rien. Faire une demande d'article est juste un moyen
+          de fluidifier nos échanges futurs.
+        </p>
+      </div>
+
+      <div id="questionsSection" class="hidden">
+        <div class="questions-section">
+          <h3>Vos <em>questions</em>.</h3>
+          <p style="color: #8a8278; font-size: 0.9rem; margin-bottom: 24px;">
+            Sur quoi souhaitez-vous en savoir plus ? Nous vous répondrons avec attention.
+          </p>
+          <textarea id="userQuestions" class="textarea" placeholder="Ex : Comment fonctionne le système de fidélité ? Quelles sont vos garanties d'authenticité ? Comment se déroule un premier achat ?..."></textarea>
+        </div>
+        <div class="center">
+          <button class="btn-primary" onclick="sendDiscussWhatsApp()">
+            <span>✦ Envoyer ma demande sur WhatsApp</span>
+          </button>
+          <div style="margin-top: 16px;">
+            <button class="btn-secondary" onclick="backToPaths()">← Retour</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="recap-footer">
+        <div class="recap-footer-name">SERENVO</div>
+        <div class="recap-footer-tag">— L'élégance, autrement —</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const data = {
+  prenom: '', nom: '', email: '', telephone: '',
+  placeLuxe: '', budget: '', frequence: '', aspectProgramme: '',
+  attentes: '', precisions: '', signature: null
+};
+
+let demandeNumero = '';
+let currentStep = 1;
+const totalSteps = 8;
+
+const stepsLabels = ['Identité', 'Coordonnées', 'Place du luxe', 'Budget', 'Fréquence', 'Programme', 'Vos attentes', 'Signature'];
+
+function goToScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+function startForm() {
+  goToScreen('form');
+  currentStep = 1;
+  renderStep();
+}
+
+function prevStep() {
+  currentStep--;
+  if (currentStep < 1) currentStep = 1;
+  renderStep();
+}
+
+function nextStep() {
+  if (!canProceed()) return;
+  if (currentStep === totalSteps) { goToFinal(); return; }
+  currentStep++;
+  renderStep();
+}
+
+function canProceed() {
+  switch (currentStep) {
+    case 1: return data.prenom.trim() && data.nom.trim();
+    case 2: return data.email.trim() && data.telephone.trim();
+    case 3: return data.placeLuxe !== '';
+    case 4: return data.budget !== '';
+    case 5: return data.frequence !== '';
+    case 6: return data.aspectProgramme !== '';
+    case 7: return data.attentes.trim().length > 0;
+    case 8: return data.signature !== null;
+    default: return true;
+  }
+}
+
+function renderStep() {
+  const stepbar = document.getElementById('stepbar');
+  stepbar.innerHTML = '';
+  for (let i = 0; i < totalSteps; i++) {
+    const seg = document.createElement('div');
+    seg.className = 'stepbar-segment' + (i < currentStep ? ' active' : '');
+    stepbar.appendChild(seg);
+  }
+  document.getElementById('stepNum').textContent = currentStep;
+  document.getElementById('stepName').textContent = stepsLabels[currentStep - 1];
+  document.getElementById('btnPrev').classList.toggle('hidden', currentStep === 1);
+  document.getElementById('btnNextText').textContent = currentStep === totalSteps ? 'Finaliser ma demande →' : 'Suivant →';
+
+  const content = document.getElementById('stepContent');
+  content.innerHTML = '';
+  content.style.animation = 'none';
+  content.offsetHeight;
+  content.style.animation = 'fadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both';
+
+  switch (currentStep) {
+    case 1: renderStep1(); break;
+    case 2: renderStep2(); break;
+    case 3: renderStep3(); break;
+    case 4: renderStep4(); break;
+    case 5: renderStep5(); break;
+    case 6: renderStep6(); break;
+    case 7: renderStep7(); break;
+    case 8: renderStep8(); break;
+  }
+  updateNextButton();
+}
+
+function updateNextButton() {
+  document.getElementById('btnNext').disabled = !canProceed();
+}
+
+function renderStep1() {
+  document.getElementById('stepContent').innerHTML = `
+    <h2 class="step-title">Faisons d'abord <em>connaissance</em>.</h2>
+    <p class="step-desc">Pour personnaliser votre accompagnement de bout en bout.</p>
+    <div class="input-row">
+      <div>
+        <div class="step-label" style="margin-bottom: 8px;">Prénom</div>
+        <input type="text" class="input" placeholder="Votre prénom" value="${data.prenom}" oninput="data.prenom=this.value; updateNextButton()">
+      </div>
+      <div>
+        <div class="step-label" style="margin-bottom: 8px;">Nom</div>
+        <input type="text" class="input" placeholder="Votre nom" value="${data.nom}" oninput="data.nom=this.value; updateNextButton()">
+      </div>
+    </div>
+  `;
+}
+
+function renderStep2() {
+  document.getElementById('stepContent').innerHTML = `
+    <h2 class="step-title">Vos <em>coordonnées</em>.</h2>
+    <p class="step-desc">Pour pouvoir vous joindre et vous accompagner personnellement.</p>
+    <div style="margin-bottom: 32px;">
+      <div class="step-label" style="margin-bottom: 8px;">Adresse e-mail</div>
+      <input type="email" class="input" placeholder="votre@email.com" value="${data.email}" oninput="data.email=this.value; updateNextButton()">
+    </div>
+    <div>
+      <div class="step-label" style="margin-bottom: 8px;">Numéro de téléphone (WhatsApp)</div>
+      <input type="tel" class="input" placeholder="06 XX XX XX XX" value="${data.telephone}" oninput="data.telephone=this.value; updateNextButton()">
+    </div>
+  `;
+}
+
+function renderStep3() {
+  const opts = [
+    { val: 'Intérêt très fort', desc: 'Le luxe est central dans votre identité' },
+    { val: 'Intérêt modéré', desc: 'Vous appréciez le luxe pour des occasions choisies' },
+    { val: 'Intérêt faible', desc: 'Vous découvrez ou explorez ce monde' }
+  ];
+  let html = `
+    <h2 class="step-title">Quelle place occupe <em>le luxe</em> dans votre manière de vous habiller ?</h2>
+    <p class="step-desc">Cela nous aide à comprendre votre rapport à l'exception.</p>
+    <div class="cards-grid">
+  `;
+  opts.forEach(o => {
+    html += `<div class="card ${data.placeLuxe === o.val ? 'selected' : ''}" onclick="data.placeLuxe='${o.val}'; renderStep()">
+      <div class="card-radio"></div>
+      <div class="card-content">
+        <div class="card-title">${o.val}</div>
+        <div class="card-desc">${o.desc}</div>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  document.getElementById('stepContent').innerHTML = html;
+}
+
+function renderStep4() {
+  const opts = [
+    'Entre 0 et 500 € par mois',
+    'Entre 500 et 1 000 € par mois',
+    'Entre 1 000 et 2 000 € par mois',
+    'Plus de 2 000 € par mois'
+  ];
+  let html = `
+    <h2 class="step-title">Dans quelle tranche de <em>budget</em> vous situez-vous ?</h2>
+    <p class="step-desc">Pour vos achats de luxe, en moyenne mensuelle.</p>
+    <div class="cards-grid">
+  `;
+  opts.forEach(o => {
+    html += `<div class="card ${data.budget === o ? 'selected' : ''}" onclick="data.budget=this.dataset.val; renderStep()" data-val="${o}">
+      <div class="card-radio"></div>
+      <div class="card-content">
+        <div class="card-title">${o}</div>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  document.getElementById('stepContent').innerHTML = html;
+}
+
+function renderStep5() {
+  const opts = [
+    { val: 'Régulièrement', desc: 'Plusieurs fois par mois' },
+    { val: 'Environ une fois par mois', desc: 'Un achat mensuel' },
+    { val: 'Occasionnellement', desc: 'Quelques fois par an' },
+    { val: 'Très rarement', desc: 'Pour des occasions spéciales' }
+  ];
+  let html = `
+    <h2 class="step-title">À quelle <em>fréquence</em> achetez-vous ce type de pièces ?</h2>
+    <p class="step-desc">Votre rythme d'achat nous oriente sur l'accompagnement adapté.</p>
+    <div class="cards-grid">
+  `;
+  opts.forEach(o => {
+    html += `<div class="card ${data.frequence === o.val ? 'selected' : ''}" onclick="data.frequence='${o.val}'; renderStep()">
+      <div class="card-radio"></div>
+      <div class="card-content">
+        <div class="card-title">${o.val}</div>
+        <div class="card-desc">${o.desc}</div>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  document.getElementById('stepContent').innerHTML = html;
+}
+
+function renderStep6() {
+  const opts = [
+    { val: 'Les avantages exclusifs lors de vos achats', desc: 'Réductions, accès anticipés, cadeaux' },
+    { val: "L'aspect relationnel avec les vendeurs", desc: 'Conseil, attention personnalisée' },
+    { val: "L'opportunité de devenir cliente partenaire", desc: 'Ambassadrice, visibilité, collaboration' },
+    { val: "L'expérience globale proposée", desc: "L'ensemble du parcours Signature" }
+  ];
+  let html = `
+    <h2 class="step-title">Quel aspect de notre programme retient le plus votre <em>attention</em> ?</h2>
+    <p class="step-desc">Pour vous offrir une expérience qui correspond à vos attentes.</p>
+    <div class="cards-grid">
+  `;
+  opts.forEach((o, i) => {
+    html += `<div class="card ${data.aspectProgramme === o.val ? 'selected' : ''}" onclick="setAspect(${i})" data-idx="${i}">
+      <div class="card-radio"></div>
+      <div class="card-content">
+        <div class="card-title">${o.val}</div>
+        <div class="card-desc">${o.desc}</div>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  document.getElementById('stepContent').innerHTML = html;
+}
+
+function setAspect(i) {
+  const opts = [
+    'Les avantages exclusifs lors de vos achats',
+    "L'aspect relationnel avec les vendeurs",
+    "L'opportunité de devenir cliente partenaire",
+    "L'expérience globale proposée"
+  ];
+  data.aspectProgramme = opts[i];
+  renderStep();
+}
+
+function renderStep7() {
+  document.getElementById('stepContent').innerHTML = `
+    <h2 class="step-title">Qu'attendez-vous d'une <em>expérience d'achat haut de gamme</em> ?</h2>
+    <p class="step-desc">Partagez-nous votre vision pour qu'on puisse y répondre avec précision.</p>
+    <div style="margin-bottom: 32px;">
+      <div class="step-label" style="margin-bottom: 12px;">Vos attentes</div>
+      <textarea class="textarea" placeholder="Authenticité garantie, conseil personnalisé, livraison soignée, exclusivité des pièces, aspect relationnel..." oninput="data.attentes=this.value; updateNextButton()">${data.attentes}</textarea>
+    </div>
+    <div>
+      <div class="step-label" style="margin-bottom: 12px;">Souhaitez-vous ajouter une précision ? (optionnel)</div>
+      <textarea class="textarea" placeholder="Tout élément que vous souhaitez nous partager..." oninput="data.precisions=this.value">${data.precisions}</textarea>
+    </div>
+  `;
+}
+
+function renderStep8() {
+  document.getElementById('stepContent').innerHTML = `
+    <h2 class="step-title">Votre <em>signature</em>.</h2>
+    <p class="step-desc">Apposez votre signature pour valider votre demande d'accès Cliente Signature.</p>
+    <div class="signature-wrap">
+      <canvas id="signatureCanvas"></canvas>
+    </div>
+    <p class="signature-hint">Signez avec votre doigt ou votre souris dans l'encadré ci-dessus.</p>
+    <div class="signature-actions">
+      <button class="btn-secondary" onclick="clearSignature()">↻ Effacer et recommencer</button>
+    </div>
+  `;
+  setTimeout(() => initSignatureCanvas(), 50);
+}
+
+let canvas, ctx, isDrawing = false;
+
+function initSignatureCanvas() {
+  canvas = document.getElementById('signatureCanvas');
+  if (!canvas) return;
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#1a1a1a';
+
+  if (data.signature) {
+    const img = new Image();
+    img.onload = () => ctx.drawImage(img, 0, 0, rect.width, rect.height);
+    img.src = data.signature;
+  }
+
+  canvas.addEventListener('mousedown', startDraw);
+  canvas.addEventListener('mousemove', draw);
+  canvas.addEventListener('mouseup', endDraw);
+  canvas.addEventListener('mouseleave', endDraw);
+  canvas.addEventListener('touchstart', startDraw, { passive: false });
+  canvas.addEventListener('touchmove', draw, { passive: false });
+  canvas.addEventListener('touchend', endDraw);
+}
+
+function getCoords(e) {
+  const rect = canvas.getBoundingClientRect();
+  if (e.touches) {
+    e.preventDefault();
+    return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+  }
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+
+function startDraw(e) {
+  isDrawing = true;
+  const { x, y } = getCoords(e);
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+}
+
+function draw(e) {
+  if (!isDrawing) return;
+  const { x, y } = getCoords(e);
+  ctx.lineTo(x, y);
+  ctx.stroke();
+  data.signature = canvas.toDataURL('image/png');
+  updateNextButton();
+}
+
+function endDraw() {
+  if (!isDrawing) return;
+  isDrawing = false;
+  ctx.closePath();
+}
+
+function clearSignature() {
+  if (!canvas || !ctx) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  data.signature = null;
+  updateNextButton();
+}
+
+function goToFinal() {
+  const num = Math.floor(1000 + Math.random() * 9000);
+  demandeNumero = `SRV-CS-${num}`;
+
+  document.getElementById('finalPrenom').textContent = data.prenom;
+  document.getElementById('finalNumero').textContent = demandeNumero;
+  document.getElementById('finalName').textContent = `${data.prenom} ${data.nom}`;
+
+  document.getElementById('pathChoiceSection').classList.remove('hidden');
+  document.getElementById('questionsSection').classList.add('hidden');
+
+  goToScreen('finale');
+}
+
+function selectPath(path) {
+  if (path === 'discuss') {
+    document.getElementById('pathChoiceSection').classList.add('hidden');
+    document.getElementById('questionsSection').classList.remove('hidden');
+    setTimeout(() => document.getElementById('userQuestions').focus(), 200);
+  } else if (path === 'request') {
+    sendInscriptionAndRedirect();
+  }
+}
+
+function backToPaths() {
+  document.getElementById('questionsSection').classList.add('hidden');
+  document.getElementById('pathChoiceSection').classList.remove('hidden');
+}
+
+function sendDiscussWhatsApp() {
+  const userQuestions = document.getElementById('userQuestions').value.trim();
+
+  let msg = `Bonjour Serenvo ✦\n\n`;
+  msg += `Je viens de finaliser ma demande Cliente Signature (n° *${demandeNumero}*).\n\n`;
+  msg += `Avant toute demande personnalisée, je souhaiterais échanger avec vous sur les points suivants :\n\n`;
+  msg += userQuestions || "— (Pas de question précise pour le moment, j'aimerais en savoir plus sur votre univers)";
+  msg += `\n\n— ${data.prenom} ${data.nom}`;
+
+  const url = `https://wa.me/33615337355?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+}
+
+function sendInscriptionAndRedirect() {
+  let msg = `Bonjour Serenvo ✦\n\n`;
+  msg += `Je viens de finaliser ma demande Cliente Signature (n° *${demandeNumero}*).\n`;
+  msg += `Je souhaite enchaîner directement avec ma première demande personnalisée d'article via votre simulateur.\n\n`;
+  msg += `Voici un résumé de mon inscription :\n\n`;
+  msg += `👤 *${data.prenom} ${data.nom}*\n`;
+  msg += `📧 ${data.email}\n`;
+  msg += `📱 ${data.telephone}\n\n`;
+  msg += `✨ Place du luxe : ${data.placeLuxe}\n`;
+  msg += `💰 Budget mensuel : ${data.budget}\n`;
+  msg += `📅 Fréquence : ${data.frequence}\n`;
+  msg += `🎯 Aspect privilégié : ${data.aspectProgramme}\n\n`;
+  msg += `Je vous transmets ma demande d'article juste après ce message.`;
+
+  const url = `https://wa.me/33615337355?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+
+  // Redirection vers le simulateur (à adapter une fois hébergé)
+  setTimeout(() => {
+    const params = new URLSearchParams({ prenom: data.prenom, nom: data.nom });
+    window.location.href = `/demande?${params.toString()}`;
+  }, 2000);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  console.log('✓ Formulaire Serenvo Cliente Signature chargé');
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1824 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Serenvo · Simulateur de Demande Privilégiée</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0908;
+    color: #f8f3ea;
+    font-family: 'Inter', -apple-system, sans-serif;
+    line-height: 1.7;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+  .cormorant { font-family: 'Cormorant Garamond', serif; }
+  em { font-style: italic; color: #e4c989; font-weight: 400; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes logoReveal {
+    0% { opacity: 0; transform: scale(0.8) translateY(20px); letter-spacing: 0.5em; }
+    100% { opacity: 1; transform: scale(1) translateY(0); letter-spacing: 0.05em; }
+  }
+  @keyframes lineGrow {
+    from { width: 0; }
+    to { width: 120px; }
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(201, 169, 97, 0.4); }
+    50% { box-shadow: 0 0 0 12px rgba(201, 169, 97, 0); }
+  }
+
+  .grid-bg {
+    background-image:
+      linear-gradient(rgba(201, 169, 97, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(201, 169, 97, 0.04) 1px, transparent 1px);
+    background-size: 80px 80px;
+  }
+
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: block; animation: fadeIn 0.6s ease both; }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 24px;
+    background: radial-gradient(ellipse at center, rgba(201,169,97,0.08) 0%, transparent 60%), #0a0908;
+    position: relative;
+  }
+  .hero-content { position: relative; z-index: 2; text-align: center; max-width: 700px; }
+  .hero-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(5rem, 12vw, 9rem);
+    font-weight: 300;
+    color: #f8f3ea;
+    line-height: 1;
+    margin-bottom: 32px;
+    animation: logoReveal 1.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .hero-logo span { color: #e4c989; }
+  .hero-line {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #c9a961, transparent);
+    margin: 0 auto 32px;
+    animation: lineGrow 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.8s both;
+  }
+  .hero-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    font-weight: 300;
+    color: #f8f3ea;
+    letter-spacing: 0.4em;
+    margin-bottom: 16px;
+    animation: fadeUp 1s cubic-bezier(0.22, 1, 0.36, 1) 1.4s both;
+  }
+  .hero-tagline {
+    font-size: 11px;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: #e4c989;
+    margin-bottom: 40px;
+    animation: fadeUp 1s cubic-bezier(0.22, 1, 0.36, 1) 1.6s both;
+  }
+  .hero-sub {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1rem, 1.8vw, 1.3rem);
+    color: #d8cfc1;
+    font-style: italic;
+    margin: 0 auto 48px;
+    line-height: 1.6;
+    animation: fadeUp 1s cubic-bezier(0.22, 1, 0.36, 1) 2s both;
+  }
+  .hero-btn {
+    opacity: 0;
+    animation: fadeUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) 3s forwards, pulse 2.5s ease-in-out 4s infinite;
+  }
+
+  /* INTRO */
+  .intro {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 24px;
+  }
+  .intro-content { max-width: 720px; text-align: center; }
+  .intro-eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: #c9a961;
+    margin-bottom: 32px;
+  }
+  .intro-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 300;
+    line-height: 1.2;
+    margin-bottom: 32px;
+  }
+  .intro-desc {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem;
+    color: #d8cfc1;
+    font-style: italic;
+    line-height: 1.7;
+    margin-bottom: 48px;
+  }
+
+  /* FORMULAIRE */
+  .form-wrap {
+    min-height: 100vh;
+    padding: 40px 24px 60px;
+  }
+  .form-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .stepbar {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+  .stepbar-segment {
+    flex: 1;
+    height: 2px;
+    background: rgba(201,169,97,0.15);
+    transition: background 0.5s;
+  }
+  .stepbar-segment.active { background: #c9a961; }
+  .stepbar-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 50px;
+  }
+  .step-label {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #c9a961;
+  }
+  .step-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem;
+    font-style: italic;
+    color: #e4c989;
+  }
+  .step-content {
+    animation: fadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .step-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    font-weight: 300;
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+  .step-desc {
+    color: #8a8278;
+    margin-bottom: 40px;
+    font-size: 0.95rem;
+  }
+
+  /* INPUTS */
+  .input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(201, 169, 97, 0.3);
+    color: #f8f3ea;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    padding: 12px 0;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+  .input:focus { border-bottom-color: #c9a961; }
+  .input::placeholder { color: #5a544a; font-style: italic; }
+  .textarea {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(201, 169, 97, 0.2);
+    color: #f8f3ea;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    padding: 16px;
+    width: 100%;
+    outline: none;
+    min-height: 140px;
+    resize: vertical;
+    transition: border-color 0.3s;
+  }
+  .textarea:focus { border-color: #c9a961; }
+  .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+  @media (max-width: 600px) { .input-row { grid-template-columns: 1fr; gap: 24px; } }
+
+  /* CARDS */
+  .cards-grid {
+    display: grid;
+    gap: 16px;
+  }
+  .grid-3 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  .card {
+    padding: 28px 20px;
+    text-align: center;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%);
+    border: 1px solid rgba(201, 169, 97, 0.15);
+    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    cursor: pointer;
+    user-select: none;
+  }
+  .card:hover {
+    border-color: rgba(201, 169, 97, 0.5);
+    transform: translateY(-3px);
+    background: linear-gradient(180deg, rgba(201, 169, 97, 0.05) 0%, rgba(201, 169, 97, 0) 100%);
+  }
+  .card.selected {
+    border-color: #c9a961;
+    background: linear-gradient(180deg, rgba(201, 169, 97, 0.12) 0%, rgba(201, 169, 97, 0.04) 100%);
+    box-shadow: 0 0 0 1px #c9a961, 0 8px 24px rgba(201, 169, 97, 0.15);
+  }
+  .card-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem;
+    color: #f8f3ea;
+  }
+  .card-desc {
+    font-size: 0.85rem;
+    color: #8a8278;
+    margin-top: 8px;
+  }
+
+  /* MARQUES */
+  .marques-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .marque {
+    padding: 14px 12px;
+    text-align: center;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(201,169,97,0.12);
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.95rem;
+    color: #d8cfc1;
+    user-select: none;
+  }
+  .marque:hover { border-color: rgba(201,169,97,0.4); color: #f8f3ea; }
+  .marque.selected {
+    background: linear-gradient(135deg, rgba(201,169,97,0.18) 0%, rgba(201,169,97,0.06) 100%);
+    border-color: #c9a961;
+    color: #f8f3ea;
+  }
+  .marque-badge {
+    position: absolute;
+    top: -7px;
+    right: 6px;
+    font-size: 7px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 3px 6px;
+    background: linear-gradient(135deg, #0a0908 0%, #28200f 100%);
+    color: #e4c989;
+    border: 1px solid #c9a961;
+    font-family: 'Inter', sans-serif;
+  }
+  .selected-marques {
+    margin-bottom: 24px;
+    padding: 12px 18px;
+    background: rgba(201,169,97,0.06);
+    border: 1px solid rgba(201,169,97,0.2);
+    display: none;
+  }
+  .selected-marques.show { display: block; }
+
+  /* CHECKBOX */
+  .checkbox-list { display: grid; gap: 10px; }
+  .checkbox-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border: 1px solid rgba(201,169,97,0.15);
+    cursor: pointer;
+    transition: all 0.3s;
+    background: rgba(255,255,255,0.02);
+    user-select: none;
+  }
+  .checkbox-card:hover { border-color: rgba(201,169,97,0.4); }
+  .checkbox-card.selected {
+    border-color: #c9a961;
+    background: rgba(201,169,97,0.06);
+  }
+  .checkbox-box {
+    width: 18px;
+    height: 18px;
+    border: 1px solid #c9a961;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .checkbox-card.selected .checkbox-box { background: #c9a961; }
+  .checkbox-card.selected .checkbox-box::after {
+    content: '✓';
+    color: #0a0908;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  .checkbox-label { font-family: 'Cormorant Garamond', serif; font-size: 1rem; }
+
+  /* INFO BOX */
+  .info-box {
+    padding: 16px 20px;
+    background: linear-gradient(135deg, rgba(201,169,97,0.08) 0%, rgba(201,169,97,0.02) 100%);
+    border-left: 2px solid #c9a961;
+    margin: 20px 0;
+    font-size: 0.88rem;
+    color: #d8cfc1;
+    line-height: 1.7;
+    font-style: italic;
+  }
+
+  /* UPLOAD */
+  .upload-zone {
+    padding: 40px 24px;
+    border: 1px dashed rgba(201,169,97,0.4);
+    background: rgba(201,169,97,0.03);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .upload-zone:hover {
+    border-color: #c9a961;
+    background: rgba(201,169,97,0.06);
+  }
+  .upload-icon { font-size: 2rem; color: #c9a961; margin-bottom: 12px; }
+  .upload-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem;
+    color: #e4c989;
+    margin-bottom: 8px;
+    font-style: italic;
+  }
+  .upload-hint { font-size: 0.85rem; color: #8a8278; }
+  .upload-preview {
+    padding: 20px;
+    border: 1px solid rgba(201,169,97,0.3);
+    background: rgba(201,169,97,0.04);
+    text-align: center;
+  }
+  .upload-preview img {
+    max-width: 100%;
+    max-height: 320px;
+    margin: 0 auto;
+    display: block;
+    border: 1px solid rgba(201,169,97,0.2);
+  }
+  .upload-filename {
+    margin-top: 16px;
+    font-size: 0.85rem;
+    color: #e4c989;
+    font-style: italic;
+  }
+
+  /* BUTTONS */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 36px;
+    background: transparent;
+    color: #e4c989;
+    border: 1px solid #c9a961;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    font-weight: 500;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s;
+    text-decoration: none;
+  }
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: #c9a961;
+    transform: translateX(-101%);
+    transition: transform 0.4s;
+    z-index: 0;
+  }
+  .btn-primary span { position: relative; z-index: 1; transition: color 0.4s; }
+  .btn-primary:hover { color: #0a0908; }
+  .btn-primary:hover::before { transform: translateX(0); }
+  .btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
+  .btn-primary:disabled:hover { color: #e4c989; }
+  .btn-primary:disabled:hover::before { transform: translateX(-101%); }
+
+  .btn-secondary {
+    padding: 14px 28px;
+    background: transparent;
+    color: #d8cfc1;
+    border: 1px solid rgba(201, 169, 97, 0.2);
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .btn-secondary:hover { border-color: #c9a961; color: #e4c989; }
+
+  .nav-buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 60px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .nav-spacer { flex: 1; }
+
+  /* RECAP */
+  .recap-wrap {
+    min-height: 100vh;
+    padding: 60px 24px;
+    background: radial-gradient(ellipse at top, rgba(201,169,97,0.08) 0%, transparent 60%), #0a0908;
+  }
+  .recap-container { max-width: 800px; margin: 0 auto; }
+  .recap-header { text-align: center; margin-bottom: 60px; }
+  .recap-mark {
+    font-size: 2rem;
+    color: #c9a961;
+    font-style: italic;
+    margin-bottom: 24px;
+  }
+  .recap-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 300;
+    line-height: 1.2;
+    margin-bottom: 20px;
+  }
+  .recap-desc {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem;
+    color: #d8cfc1;
+    font-style: italic;
+    line-height: 1.7;
+    max-width: 560px;
+    margin: 0 auto;
+  }
+  .demande-num-box {
+    padding: 40px 32px;
+    border: 1px solid rgba(201,169,97,0.3);
+    background: linear-gradient(135deg, rgba(201,169,97,0.08) 0%, rgba(201,169,97,0.02) 100%);
+    text-align: center;
+    margin-bottom: 40px;
+    position: relative;
+  }
+  .demande-num-box .corner {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border-color: #c9a961;
+    border-style: solid;
+    border-width: 0;
+  }
+  .demande-num-box .corner.tl { top: -1px; left: -1px; border-top-width: 1px; border-left-width: 1px; }
+  .demande-num-box .corner.br { bottom: -1px; right: -1px; border-bottom-width: 1px; border-right-width: 1px; }
+  .demande-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.4rem, 5vw, 3.5rem);
+    color: #e4c989;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    margin: 12px 0 8px;
+  }
+  .demande-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.3rem;
+    font-style: italic;
+    color: #f8f3ea;
+  }
+  .recap-fiche {
+    padding: 32px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(201,169,97,0.15);
+    margin-bottom: 40px;
+  }
+  .recap-section {
+    padding: 18px 0;
+    border-bottom: 1px solid rgba(201,169,97,0.12);
+  }
+  .recap-section:last-child { border-bottom: none; }
+  .recap-section-label {
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #c9a961;
+    margin-bottom: 6px;
+  }
+  .recap-section-value {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    color: #f8f3ea;
+    font-weight: 300;
+  }
+  .send-actions { text-align: center; margin-bottom: 40px; }
+  .send-actions-info {
+    padding: 20px 24px;
+    background: rgba(201,169,97,0.05);
+    border: 1px solid rgba(201,169,97,0.2);
+    margin-bottom: 24px;
+    font-size: 0.9rem;
+    color: #d8cfc1;
+    font-style: italic;
+    line-height: 1.6;
+  }
+  .send-buttons {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .recap-footer {
+    text-align: center;
+    padding-top: 40px;
+    border-top: 1px solid rgba(201,169,97,0.15);
+  }
+  .recap-footer-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    color: #e4c989;
+    letter-spacing: 0.4em;
+    margin-bottom: 8px;
+  }
+  .recap-footer-tag {
+    font-size: 10px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: #8a8278;
+  }
+  .selected-precision-input {
+    margin-top: 16px;
+  }
+  .center { text-align: center; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     HERO / ANIMATION D'ACCUEIL
+============================================================ -->
+<div class="screen active grid-bg" id="hero">
+  <div class="hero">
+    <div class="hero-content">
+      <div class="hero-logo"><span>S</span>R</div>
+      <div class="hero-line" style="height: 1px; width: 0;"></div>
+      <div class="hero-name">SERENVO</div>
+      <div class="hero-tagline">Maison de Demande Privilégiée</div>
+      <p class="hero-sub">
+        Bienvenue dans votre espace privilégié.<br>
+        Composez la demande qui vous ressemble.
+      </p>
+      <button class="btn-primary hero-btn" onclick="goToScreen('intro')">
+        <span>◆ Commencer mon parcours</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     INTRO
+============================================================ -->
+<div class="screen" id="intro">
+  <div class="intro">
+    <div class="intro-content">
+      <div class="intro-eyebrow">◆ Votre parcours en 12 étapes</div>
+      <h1 class="intro-title">
+        Avant de commencer,<br>
+        <em>quelques instants ensemble.</em>
+      </h1>
+      <p class="intro-desc">
+        Ce simulateur va vous guider à travers une sélection de critères,
+        afin que nous puissions vous proposer la pièce qui correspond exactement
+        à vos désirs — qu'elle soit en boutique ou exclusivement dénichée pour vous.
+      </p>
+      <button class="btn-primary" onclick="startForm()">
+        <span>Composer ma demande</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     FORMULAIRE
+============================================================ -->
+<div class="screen" id="form">
+  <div class="form-wrap">
+    <div class="form-container">
+
+      <!-- Barre de progression -->
+      <div class="stepbar" id="stepbar"></div>
+      <div class="stepbar-info">
+        <span class="step-label">Étape <span id="stepNum">1</span> / 12</span>
+        <span class="step-name cormorant" id="stepName">Identité</span>
+      </div>
+
+      <!-- Contenu dynamique -->
+      <div id="stepContent" class="step-content"></div>
+
+      <!-- Boutons navigation -->
+      <div class="nav-buttons">
+        <button class="btn-secondary hidden" id="btnPrev" onclick="prevStep()">← Précédent</button>
+        <div class="nav-spacer"></div>
+        <button class="btn-primary" id="btnNext" onclick="nextStep()">
+          <span id="btnNextText">Suivant →</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     RÉCAP & ENVOI
+============================================================ -->
+<div class="screen" id="recap">
+  <div class="recap-wrap grid-bg">
+    <div class="recap-container">
+
+      <div class="recap-header">
+        <div class="recap-mark">◆</div>
+        <h1 class="recap-title">
+          Merci, <em id="recapPrenom"></em>,<br>
+          pour votre confiance.
+        </h1>
+        <p class="recap-desc">
+          Votre demande personnalisée a été soigneusement préparée.<br>
+          Nous vous répondrons sous 24h avec une sélection sur-mesure, pensée pour vous.
+        </p>
+      </div>
+
+      <div class="demande-num-box">
+        <span class="corner tl"></span>
+        <span class="corner br"></span>
+        <div class="step-label">Demande référencée</div>
+        <div class="demande-num" id="recapNumero"></div>
+        <div class="demande-name" id="recapName"></div>
+      </div>
+
+      <div class="recap-fiche" id="recapFiche"></div>
+
+      <div class="send-actions">
+        <div class="step-label" style="margin-bottom: 24px;">◆ Transmettez votre demande</div>
+
+        <div class="send-actions-info">
+          ✦ Votre demande complète sera <strong style="color: #e4c989; font-style: normal;">automatiquement formatée</strong> dans le message WhatsApp.
+          Un seul clic suffit pour nous l'envoyer.
+        </div>
+
+        <div class="send-buttons">
+          <button class="btn-primary" onclick="openWhatsApp()" style="font-size: 12px; padding: 20px 48px;">
+            <span>✦ Envoyer sur WhatsApp</span>
+          </button>
+        </div>
+
+        <p style="margin-top: 28px; font-size: 0.85rem; color: #8a8278; font-style: italic;">
+          Conservez votre numéro de demande <strong style="color: #e4c989;" id="recapNumeroFooter"></strong> pour le suivi.
+        </p>
+
+        <!-- Option PDF discrète en bas -->
+        <div style="margin-top: 40px; padding-top: 28px; border-top: 1px solid rgba(201,169,97,0.15);">
+          <p style="font-size: 0.8rem; color: #8a8278; margin-bottom: 14px; font-style: italic;">
+            ◆ Souhaitez-vous garder une trace personnelle de votre demande ?
+          </p>
+          <button class="btn-secondary" onclick="generatePDF()">
+            ⬇ Télécharger ma fiche en souvenir
+          </button>
+        </div>
+      </div>
+
+      <div class="recap-footer">
+        <div class="recap-footer-name">SERENVO</div>
+        <div class="recap-footer-tag">— L'élégance, autrement —</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DONNÉES
+// ============================================================
+const data = {
+  prenom: '', nom: '', typeProduit: '', occasion: '',
+  design: '', designAutre: '', marques: [],
+  couleurType: '', couleurPrecision: '',
+  referenceVisuelle: '', referenceLien: '',
+  prix: '', prixPrecision: '',
+  delai: '', delaiDate: '',
+  livraison: '', paiement: '',
+  visibilite: [],
+  sourceConnaissance: '', sourcePrecision: '',
+  messageLibre: ''
+};
+
+let photoFile = null;
+let photoPreview = null;
+let demandeNumero = '';
+let currentStep = 1;
+const totalSteps = 12;
+
+const marques = [
+  { nom: 'Alexander McQueen', statut: 'mixte' },
+  { nom: 'Baldinini Trend', statut: 'mixte' },
+  { nom: 'Balenciaga', statut: 'mixte' },
+  { nom: 'Balmain', statut: 'mixte' },
+  { nom: 'Bottega Veneta', statut: 'mixte' },
+  { nom: 'Brunello Cucinelli', statut: 'mixte' },
+  { nom: 'Burberry', statut: 'mixte' },
+  { nom: 'Calvin Klein', statut: 'mixte' },
+  { nom: 'Céline', statut: 'hors' },
+  { nom: 'Chanel', statut: 'hors' },
+  { nom: 'Chloé', statut: 'mixte' },
+  { nom: 'Coccinelle', statut: 'mixte' },
+  { nom: 'Diesel', statut: 'mixte' },
+  { nom: 'Dior', statut: 'hors' },
+  { nom: 'Dolce & Gabbana', statut: 'mixte' },
+  { nom: 'Emporio Armani', statut: 'mixte' },
+  { nom: 'Fendi', statut: 'mixte' },
+  { nom: 'Furla', statut: 'mixte' },
+  { nom: 'Ganni', statut: 'mixte' },
+  { nom: 'Givenchy', statut: 'mixte' },
+  { nom: 'Gucci', statut: 'mixte' },
+  { nom: 'Guess', statut: 'mixte' },
+  { nom: 'Isabel Marant', statut: 'mixte' },
+  { nom: 'Jacquemus', statut: 'mixte' },
+  { nom: 'Jimmy Choo', statut: 'mixte' },
+  { nom: 'Laura Biagiotti', statut: 'mixte' },
+  { nom: 'Liu-Jo', statut: 'mixte' },
+  { nom: 'Louis Vuitton', statut: 'hors' },
+  { nom: 'Marc Jacobs', statut: 'mixte' },
+  { nom: 'Mario Valentino', statut: 'hors' },
+  { nom: 'Michael Kors', statut: 'mixte' },
+  { nom: 'Miu Miu', statut: 'mixte' },
+  { nom: 'Pinko', statut: 'mixte' },
+  { nom: 'Prada', statut: 'mixte' },
+  { nom: 'Salvatore Ferragamo', statut: 'mixte' },
+  { nom: 'Tommy Hilfiger', statut: 'mixte' },
+  { nom: 'Valentino Garavani', statut: 'mixte' },
+  { nom: 'Versace', statut: 'mixte' },
+  { nom: 'Yves Saint Laurent', statut: 'mixte' }
+];
+
+const stepsLabels = [
+  'Identité', 'Type de produit', 'Occasion', 'Design',
+  'Marques', 'Couleurs', 'Référence', 'Prix',
+  'Délai', 'Livraison', 'Paiement', 'Finitions'
+];
+
+// ============================================================
+// HELPERS
+// ============================================================
+function aHorsCatalogue() {
+  // Y a-t-il au moins une marque "hors" (Exclusif) sélectionnée ?
+  return data.marques.some(m => {
+    const marque = marques.find(mq => mq.nom === m);
+    return marque && marque.statut === 'hors';
+  });
+}
+
+function aMixte() {
+  // Y a-t-il au moins une marque "mixte" sélectionnée ?
+  return data.marques.some(m => {
+    const marque = marques.find(mq => mq.nom === m);
+    return marque && marque.statut === 'mixte';
+  });
+}
+
+function toutesHorsCatalogue() {
+  // Toutes les marques sélectionnées sont-elles "hors" (Exclusif) ?
+  const realMarques = data.marques.filter(m => m !== 'Surprenez-moi');
+  if (realMarques.length === 0) return false;
+  return realMarques.every(m => {
+    const marque = marques.find(mq => mq.nom === m);
+    return marque && marque.statut === 'hors';
+  });
+}
+
+function toutesMixtes() {
+  // Toutes les marques sélectionnées sont-elles "mixte" (pas d'exclusif) ?
+  const realMarques = data.marques.filter(m => m !== 'Surprenez-moi');
+  if (realMarques.length === 0) return false;
+  return realMarques.every(m => {
+    const marque = marques.find(mq => mq.nom === m);
+    return marque && marque.statut === 'mixte';
+  });
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function goToScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+function startForm() {
+  goToScreen('form');
+  currentStep = 1;
+  renderStep();
+}
+
+function prevStep() {
+  if (currentStep === 9 && !aHorsCatalogue()) {
+    currentStep = 7;
+  } else {
+    currentStep--;
+  }
+  if (currentStep < 1) currentStep = 1;
+  renderStep();
+}
+
+function nextStep() {
+  if (!canProceed()) return;
+  if (currentStep === 12) {
+    goToRecap();
+    return;
+  }
+  // Skip étape 9 si pas hors catalogue
+  if (currentStep === 8 && !aHorsCatalogue()) {
+    data.delai = 'N/A';
+    currentStep = 10;
+  } else {
+    currentStep++;
+  }
+  renderStep();
+}
+
+function canProceed() {
+  switch (currentStep) {
+    case 1: return data.prenom.trim() && data.nom.trim();
+    case 2: return data.typeProduit !== '';
+    case 3: return data.occasion !== '';
+    case 4: return data.design !== '' && (data.design !== 'Autre' || data.designAutre.trim());
+    case 5: return data.marques.length > 0;
+    case 6: return data.couleurType !== '';
+    case 7:
+      if (data.referenceVisuelle === '') return false;
+      if (data.referenceVisuelle === 'Oui, je joins une photo' && !photoFile) return false;
+      if (data.referenceVisuelle === "Oui, j'ai un lien à partager" && !data.referenceLien.trim()) return false;
+      return true;
+    case 8: return data.prix !== '';
+    case 9: return data.delai !== '';
+    case 10: return data.livraison !== '';
+    case 11: return data.paiement !== '';
+    case 12: return data.sourceConnaissance !== '';
+    default: return true;
+  }
+}
+
+// ============================================================
+// RENDU DES ÉTAPES
+// ============================================================
+function renderStep() {
+  // Barre de progression
+  const stepbar = document.getElementById('stepbar');
+  stepbar.innerHTML = '';
+  for (let i = 0; i < totalSteps; i++) {
+    const seg = document.createElement('div');
+    seg.className = 'stepbar-segment' + (i < currentStep ? ' active' : '');
+    stepbar.appendChild(seg);
+  }
+  document.getElementById('stepNum').textContent = currentStep;
+  document.getElementById('stepName').textContent = stepsLabels[currentStep - 1];
+
+  // Bouton précédent
+  document.getElementById('btnPrev').classList.toggle('hidden', currentStep === 1);
+
+  // Bouton suivant
+  document.getElementById('btnNextText').textContent = currentStep === 12 ? 'Finaliser ma demande →' : 'Suivant →';
+
+  // Contenu
+  const content = document.getElementById('stepContent');
+  content.innerHTML = '';
+  content.style.animation = 'none';
+  content.offsetHeight; // force reflow
+  content.style.animation = 'fadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both';
+
+  switch (currentStep) {
+    case 1: renderStep1(); break;
+    case 2: renderStep2(); break;
+    case 3: renderStep3(); break;
+    case 4: renderStep4(); break;
+    case 5: renderStep5(); break;
+    case 6: renderStep6(); break;
+    case 7: renderStep7(); break;
+    case 8: renderStep8(); break;
+    case 9: renderStep9(); break;
+    case 10: renderStep10(); break;
+    case 11: renderStep11(); break;
+    case 12: renderStep12(); break;
+  }
+
+  updateNextButton();
+}
+
+function updateNextButton() {
+  const btn = document.getElementById('btnNext');
+  btn.disabled = !canProceed();
+}
+
+function renderStep1() {
+  document.getElementById('stepContent').innerHTML = `
+    <h2 class="step-title">Faisons d'abord <em>connaissance</em>.</h2>
+    <p class="step-desc">Pour personnaliser votre demande de bout en bout.</p>
+    <div class="input-row">
+      <div>
+        <div class="step-label" style="margin-bottom: 8px;">Prénom</div>
+        <input type="text" class="input" id="prenom" placeholder="Votre prénom" value="${data.prenom}" oninput="data.prenom=this.value; updateNextButton()">
+      </div>
+      <div>
+        <div class="step-label" style="margin-bottom: 8px;">Nom</div>
+        <input type="text" class="input" id="nom" placeholder="Votre nom" value="${data.nom}" oninput="data.nom=this.value; updateNextButton()">
+      </div>
+    </div>
+  `;
+}
+
+function renderStep2() {
+  const types = ['Bandoulière', 'Sac à main', 'Cabas', 'Sac seau', 'Portefeuille', 'Fragrance'];
+  let html = `
+    <h2 class="step-title">Que <em>recherchez-vous</em> ?</h2>
+    <p class="step-desc">Sélectionnez la catégorie qui vous intéresse.</p>
+    <div class="cards-grid grid-3">
+  `;
+  types.forEach(t => {
+    html += `<div class="card ${data.typeProduit === t ? 'selected' : ''}" onclick="data.typeProduit='${t}'; renderStep()"><div class="card-title">${t}</div></div>`;
+  });
+  html += '</div>';
+  document.getElementById('stepContent').innerHTML = html;
+}
+
+function renderStep3() {
+  const occasions = ['Quotidien · Travail', 'Soirée · Événement', 'Voyage', 'Cadeau', 'Pièce de collection'];
+  let html = `
+    <h2 class="step-title">Pour quelle <em>occasion</em> ?</h2>
+    <p class="step-desc">Cela nous aide à orienter notre sélection.</p>
+    <div class="cards-grid grid-3">
+  `;
+  occasions.forEach(t => {
+    html += `<div class="card ${data.occasion === t ? 'selected' : ''}" onclick="data.occasion='${t}'; renderStep()"><div class="card-title">${t}</div></div>`;
+  });
+  html += '</div>';
+  document.getElementById('stepContent').innerHTML = html;
+}
+
+function renderStep4() {
+  const designs = ['Sobre & épuré', 'À motifs', 'Extravagant', 'Autre'];
+  let html = `
+    <h2 class="step-title">Votre style <em>esthétique</em> ?</h2>
+    <p class="step-desc">Quelle direction visuelle vous parle le plus ?</p>
+    <div class="cards-grid grid-3" style="margin-bottom: 24px;">
+  `;
+  designs.forEach(t => {
+    html += `<div class="card ${data.design === t ? 'selected' : ''}" onclick="data.design='${t}'; renderStep()"><div class="card-title">${t}</div></div>`;
+  });
+  html += '</div>';
+  if (data.design === 'Autre') {
+    html += `<input type="text" class="input selected-precision-input" placeholder="Précisez votre style..." value="${data.designAutre}" oninput="data.designAutre=this.value; updateNextButton()">`;
+  }
+  document.getElementById('stepContent').innerHTML = html;
+}
+
+function renderStep5() {
+  let html = `
+    <h2 class="step-title">Vos <em>maisons préférées</em>.</h2>
+    <p class="step-desc">Sélectionnez une ou plusieurs marques. Les maisons marquées <em style="color:#c9a961">"EXCLUSIF"</em> sont uniquement disponibles sur demande personnalisée.</p>
+  `;
+  if (data.marques.length > 0) {
+    html += `
+      <div class="selected-marques show">
+        <span class="step-label">Sélectionnées : </span>
+        <span class="cormorant" style="font-style: italic; color: #e4c989;">${data.marques.join(' · ')}</span>
+      </div>
+    `;
+  }
+  html += '<div class="marques-grid">';
+  marques.forEach(m => {
+    const sel = data.marques.includes(m.nom) ? 'selected' : '';
+    const badge = m.statut === 'hors' ? '<span class="marque-badge">Exclusif</span>' : '';
+    html += `<div class="marque ${sel}" onclick="toggleMarque('${m.nom.replace(/'/g, "\\'")}')">${badge}${m.nom}</div>`;
+  });
+  html += '</div>';
+  const surpriseSel = data.marques.includes('Surprenez-moi') ? 'selected' : '';
+  html += `<div class="card ${surpriseSel}" style="margin-top: 20px; padding: 18px 24px;" onclick="toggleMarque('Surprenez-moi')">
+    <div class="cormorant" style="font-size: 1.15rem; font-style: italic; color: #e4c989;">◆ Surprenez-moi — pas de préférence</div>
+  </div>`;
+
+  if (aHorsCatalogue() && !aMixte()) {
+    // CAS 1 : Uniquement des marques exclusives → message complet
+    html += `<div class="info-box">✦ Les maisons que vous avez sélectionnées proposent uniquement des pièces exclusives. Le paiement s'effectue hors site de manière sécurisée, avec possibilité de payer en plusieurs fois.</div>`;
+  } else if (aHorsCatalogue() && aMixte()) {
+    // CAS 3 : Mix exclusif + mixte → mention courte
+    html += `<div class="info-box">✦ Votre sélection inclut des pièces exclusives. Pour celles-ci, le paiement s'effectue hors site avec possibilité de plusieurs fois. Pour les autres, paiement direct sur le site.</div>`;
+  }
+  // CAS 2 : Que des marques mixtes → pas de message (paiement sur le site, comme d'habitude)
+
+  document.getElementById('stepContent').innerHTML = html;
+}
+
+function toggleMarque(nom) {
+  const idx = data.marques.indexOf(nom);
+  if (idx > -1) data.marques.splice(idx, 1);
+  else data.marques.push(nom);
+  renderStep();
+}
+
+function renderStep6() {
+  let html = `
+    <h2 class="step-title">Vos <em>couleurs</em>.</h2>
+    <p class="step-desc">Quelle palette vous correspond ?</p>
+    <div class="cards-grid grid-2" style="margin-bottom: 32px;">
+      <div class="card ${data.couleurType === 'Neutres' ? 'selected' : ''}" onclick="data.couleurType='Neutres'; renderStep()">
+        <div class="card-title" style="font-size: 1.4rem;">Neutres</div>
+        <div class="card-desc">Noir, blanc, marron, beige, ivoire</div>
+      </div>
+      <div class="card ${data.couleurType === 'Vives' ? 'selected' : ''}" onclick="data.couleurType='Vives'; renderStep()">
+        <div class="card-title" style="font-size: 1.4rem;">Vives</div>
+        <div class="card-desc">Rouge, vert, bleu, jaune, vibrant</div>
+      </div>
+    </div>
+    <div class="step-label" style="margin-bottom: 8px;">Précision (optionnel)</div>
+    <input type="text" class="input" placeholder="Ex : Bordeaux, vert sapin, terracotta..." value="${data.couleurPrecision}" oninput="data.couleurPrecision=this.value">
+  `;
+  document.getElementById('stepContent').innerHTML = html;
+}
+
+function renderStep7() {
+  const opts = ['Oui, je joins une photo', "Oui, j'ai un lien à partager", 'Non, je vous fais confiance'];
+  let html = `
+    <h2 class="step-title">Avez-vous une <em>référence en tête</em> ?</h2>
+    <p class="step-desc">Une image vaut mille mots — partagez-nous votre inspiration si vous en avez une.</p>
+    <div class="cards-grid grid-3" style="margin-bottom: 32px;">
+  `;
+  opts.forEach(t => {
+    html += `<div class="card ${data.referenceVisuelle === t ? 'selected' : ''}" onclick="setReference('${t.replace(/'/g, "\\'")}')"><div class="card-title" style="font-size: 1rem;">${t}</div></div>`;
+  });
+  html += '</div>';
+
+  if (data.referenceVisuelle === 'Oui, je joins une photo') {
+    if (!photoPreview) {
+      html += `
+        <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+          <div class="upload-icon">✦</div>
+          <div class="upload-title">Cliquez pour choisir votre image</div>
+          <div class="upload-hint">JPG, PNG, WEBP — Maximum 10 Mo</div>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFileUpload(event)">
+      `;
+    } else {
+      html += `
+        <div class="upload-preview">
+          <img src="${photoPreview}" alt="Référence">
+          <div class="upload-filename">✓ Image jointe : ${photoFile.name}</div>
+          <button class="btn-secondary" style="margin-top: 16px;" onclick="resetPhoto()">Changer d'image</button>
+        </div>
+      `;
+    }
+  } else if (data.referenceVisuelle === "Oui, j'ai un lien à partager") {
+    html += `<input type="text" class="input" placeholder="Collez votre lien (Pinterest, Instagram, site officiel...)" value="${data.referenceLien}" oninput="data.referenceLien=this.value; updateNextButton()">`;
+  }
+
+  document.getElementById('stepContent').innerHTML = html;
+}
+
+function setReference(t) {
+  data.referenceVisuelle = t;
+  if (t !== 'Oui, je joins une photo') {
+    photoFile = null;
+    photoPreview = null;
+  }
+  renderStep();
+}
+
+function handleFileUpload(e) {
+  const file = e.target.files[0];
+  if (file) {
+    photoFile = file;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      photoPreview = ev.target.result;
+      renderStep();
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function resetPhoto() {
+  photoFile = null;
+  photoPreview = null;
+  renderStep();
+}
+
+function renderStep8() {
+  const prix = ['150 € — 250 €', '250 € — 500 €', '500 € — 1 000 €', '1 000 € — 1 500 €', '1 500 € — 2 000 €', 'Plus de 2 000 €'];
+  let html = `
+    <h2 class="step-title">Votre <em>budget</em>.</h2>
+    <p class="step-desc">Indiquez la fourchette qui vous correspond.</p>
+    <div class="cards-grid grid-3" style="margin-bottom: 24px;">
+  `;
+  prix.forEach(t => {
+    html += `<div class="card ${data.prix === t ? 'selected' : ''}" onclick="data.prix='${t}'; renderStep()"><div class="card-title">${t}</div></div>`;
+  });
+  html += '</div>';
+  if (data.prix === 'Plus de 2 000 €') {
+    html += `
+      <div class="step-label" style="margin-bottom: 8px;">Précision</div>
+      <input type="text" class="input" placeholder="Ex : jusqu'à 3 500 €, jusqu'à 5 000 €..." value="${data.prixPrecision}" oninput="data.prixPrecision=this.value">
+    `;
+  }
+  document.getElementById('stepContent').innerHTML = html;
+}
+
+function renderStep9() {
+  if (!aHorsCatalogue()) {
+    document.getElementById('stepContent').innerHTML = `
+      <div class="center" style="padding: 60px 20px;">
+        <div class="cormorant" style="font-size: 2rem; color: #e4c989; font-style: italic; margin-bottom: 20px;">◆ Étape passée</div>
+        <p class="cormorant" style="font-size: 1.2rem; color: #d8cfc1; font-style: italic;">
+          Vos marques sélectionnées sont disponibles en boutique,<br>
+          nous traiterons votre demande sans délai d'attente.
+        </p>
+      </div>
+    `;
+    data.delai = 'N/A';
+    return;
+  }
+  const delais = ['Pas pressée', 'Sous 2 semaines', 'Sous 1 mois', 'Pour une date précise'];
+  let html = `
+    <h2 class="step-title">Votre <em>délai</em> ?</h2>
+    <p class="step-desc">Pour les pièces exclusives, le délai d'approvisionnement varie. Indiquez votre préférence.</p>
+    <div class="cards-grid grid-3">
+  `;
+  delais.forEach(t => {
+    html += `<div class="card ${data.delai === t ? 'selected' : ''}" onclick="data.delai='${t}'; renderStep()"><div class="card-title">${t}</div></div>`;
+  });
+  html += '</div>';
+  if (data.delai === 'Pour une date précise') {
+    html += `<input type="date" class="input selected-precision-input" value="${data.delaiDate}" oninput="data.delaiDate=this.value">`;
+  }
+  document.getElementById('stepContent').innerHTML = html;
+}
+
+function renderStep10() {
+  document.getElementById('stepContent').innerHTML = `
+    <h2 class="step-title">Votre <em>livraison</em>.</h2>
+    <p class="step-desc">Standard ou express, c'est vous qui décidez.</p>
+    <div class="cards-grid grid-2">
+      <div class="card ${data.livraison === 'Standard' ? 'selected' : ''}" onclick="data.livraison='Standard'; renderStep()">
+        <div class="card-title" style="font-size: 1.5rem;">Standard</div>
+        <div class="card-desc">3 à 7 jours ouvrés</div>
+      </div>
+      <div class="card ${data.livraison === 'Express' ? 'selected' : ''}" onclick="data.livraison='Express'; renderStep()">
+        <div class="card-title" style="font-size: 1.5rem;">Express</div>
+        <div class="card-desc">2 à 4 jours ouvrés</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderStep11() {
+  let info = '';
+  let infoBox = '';
+
+  if (toutesHorsCatalogue()) {
+    info = "Pour vos pièces exclusives, le paiement s'effectue hors site.";
+    infoBox = `<div class="info-box">✦ Vos pièces étant exclusives, le paiement se fait hors site de manière sécurisée. Vous avez la possibilité de payer en plusieurs fois.</div>`;
+  } else if (aHorsCatalogue() && aMixte()) {
+    info = "Le paiement s'effectuera directement sur le site, sauf pour les pièces exclusives qui seront réglées hors site.";
+  } else {
+    info = "Le paiement s'effectuera directement sur le site.";
+  }
+
+  let html = `
+    <h2 class="step-title">Votre <em>paiement</em>.</h2>
+    <p class="step-desc">${info}</p>
+    ${infoBox}
+  `;
+
+  html += '<div class="cards-grid grid-3">';
+
+  html += `
+    <div class="card ${data.paiement === 'Carte Visa' ? 'selected' : ''}" onclick="data.paiement='Carte Visa'; renderStep()">
+      <div class="card-title">Carte Visa</div>
+      <div class="card-desc">Sur le site</div>
+    </div>
+    <div class="card ${data.paiement === 'Apple Pay' ? 'selected' : ''}" onclick="data.paiement='Apple Pay'; renderStep()">
+      <div class="card-title">Apple Pay</div>
+      <div class="card-desc">Sur le site</div>
+    </div>
+    <div class="card ${data.paiement === 'PayPal' ? 'selected' : ''}" onclick="data.paiement='PayPal'; renderStep()">
+      <div class="card-title">PayPal</div>
+      <div class="card-desc">Sur le site</div>
+    </div>
+    <div class="card ${data.paiement === 'Revolut Pay' ? 'selected' : ''}" onclick="data.paiement='Revolut Pay'; renderStep()">
+      <div class="card-title">Revolut Pay</div>
+      <div class="card-desc" style="color: #e4c989; font-style: italic;">Paiement sécurisé en plusieurs fois</div>
+    </div>
+    <div class="card ${data.paiement === 'À discuter' ? 'selected' : ''}" onclick="data.paiement='À discuter'; renderStep()">
+      <div class="card-title">À discuter</div>
+      <div class="card-desc">Avec vous</div>
+    </div>
+  `;
+  html += '</div>';
+  document.getElementById('stepContent').innerHTML = html;
+}
+
+function renderStep12() {
+  const visibilites = ['Post commun sur réseaux', 'Apparaître sur le site Serenvo', 'Aucune visibilité — discret'];
+  const sources = ['Instagram', 'TikTok', 'Bouche à oreille', 'Recherche Google', 'Autre'];
+
+  let html = `
+    <h2 class="step-title">Quelques <em>dernières finitions</em>.</h2>
+    <p class="step-desc">Pour parfaire votre expérience.</p>
+
+    <div style="margin-bottom: 32px;">
+      <div class="step-label" style="margin-bottom: 12px;">Visibilité communauté (optionnel)</div>
+      <p style="color: #8a8278; margin-bottom: 16px; font-size: 0.85rem; font-style: italic;">Souhaitez-vous valoriser votre acquisition avec nous ?</p>
+      <div class="checkbox-list">
+  `;
+  visibilites.forEach(v => {
+    const sel = data.visibilite.includes(v) ? 'selected' : '';
+    html += `<div class="checkbox-card ${sel}" onclick="toggleVisibilite('${v.replace(/'/g, "\\'")}')">
+      <div class="checkbox-box"></div>
+      <span class="checkbox-label">${v}</span>
+    </div>`;
+  });
+  html += `
+      </div>
+    </div>
+
+    <div style="margin-bottom: 32px;">
+      <div class="step-label" style="margin-bottom: 12px;">Comment nous avez-vous connus ?</div>
+      <div class="cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;">
+  `;
+  sources.forEach(s => {
+    html += `<div class="card ${data.sourceConnaissance === s ? 'selected' : ''}" style="padding: 14px 12px;" onclick="data.sourceConnaissance='${s}'; renderStep()"><div style="font-size: 0.9rem; color: #f8f3ea;">${s}</div></div>`;
+  });
+  html += '</div>';
+  if (data.sourceConnaissance === 'Autre') {
+    html += `<input type="text" class="input selected-precision-input" placeholder="Précisez..." value="${data.sourcePrecision}" oninput="data.sourcePrecision=this.value">`;
+  }
+  html += `</div>
+
+    <div>
+      <div class="step-label" style="margin-bottom: 12px;">Un message à nous transmettre ? (optionnel)</div>
+      <textarea class="textarea" placeholder="Une référence précise vue ailleurs, un détail important, une attente particulière..." oninput="data.messageLibre=this.value">${data.messageLibre}</textarea>
+    </div>
+  `;
+  document.getElementById('stepContent').innerHTML = html;
+}
+
+function toggleVisibilite(v) {
+  const idx = data.visibilite.indexOf(v);
+  if (idx > -1) data.visibilite.splice(idx, 1);
+  else data.visibilite.push(v);
+  renderStep();
+}
+
+// ============================================================
+// RÉCAP & ENVOI
+// ============================================================
+function goToRecap() {
+  // Génère le numéro de demande
+  const num = Math.floor(1000 + Math.random() * 9000);
+  demandeNumero = `SRV-${num}`;
+
+  document.getElementById('recapPrenom').textContent = data.prenom;
+  document.getElementById('recapNumero').textContent = demandeNumero;
+  document.getElementById('recapName').textContent = `${data.prenom} ${data.nom}`;
+  document.getElementById('recapNumeroFooter').textContent = demandeNumero;
+
+  // Construit la fiche
+  let fiche = '';
+  const sections = [
+    ['Type de produit', data.typeProduit],
+    ['Occasion', data.occasion],
+    ['Style esthétique', data.design + (data.designAutre ? ` — ${data.designAutre}` : '')],
+    ['Maisons souhaitées', data.marques.join(' · ') || 'Surprenez-moi'],
+    ['Couleurs', data.couleurType + (data.couleurPrecision ? ` — ${data.couleurPrecision}` : '')],
+    ['Référence visuelle', data.referenceVisuelle + (data.referenceLien ? ` — ${data.referenceLien}` : '') + (photoFile ? ` · Photo : ${photoFile.name}` : '')],
+    ['Budget', data.prix + (data.prixPrecision ? ` — ${data.prixPrecision}` : '')]
+  ];
+
+  if (aHorsCatalogue() && data.delai && data.delai !== 'N/A') {
+    sections.push(['Délai souhaité', data.delai + (data.delaiDate ? ` — ${data.delaiDate}` : '')]);
+  }
+  sections.push(['Livraison', data.livraison]);
+  sections.push(['Paiement', data.paiement]);
+  if (data.visibilite.length > 0) {
+    sections.push(['Visibilité communauté', data.visibilite.join(' · ')]);
+  }
+  sections.push(['Source', data.sourceConnaissance + (data.sourcePrecision ? ` — ${data.sourcePrecision}` : '')]);
+  if (data.messageLibre) {
+    sections.push(['Message personnel', `« ${data.messageLibre} »`]);
+  }
+
+  sections.forEach(([label, value]) => {
+    fiche += `<div class="recap-section"><div class="recap-section-label">${label}</div><div class="recap-section-value">${value || '—'}</div></div>`;
+  });
+  document.getElementById('recapFiche').innerHTML = fiche;
+
+  goToScreen('recap');
+}
+
+// ============================================================
+// GÉNÉRATION PDF
+// ============================================================
+function generatePDF() {
+  // Vérifie que jsPDF est bien chargé
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    showError("La librairie PDF n'est pas encore chargée. Réessayez dans quelques secondes ou rafraîchissez la page.");
+    return false;
+  }
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const margin = 20;
+    const contentWidth = pageWidth - margin * 2;
+
+    const noir = [10, 9, 8];
+    const orClair = [228, 201, 137];
+    const or = [201, 169, 97];
+    const ivoire = [248, 243, 234];
+    const grisMute = [138, 130, 120];
+
+    let y = 0;
+
+    // Header noir
+    pdf.setFillColor(noir[0], noir[1], noir[2]);
+    pdf.rect(0, 0, pageWidth, 65, 'F');
+    pdf.setDrawColor(or[0], or[1], or[2]);
+    pdf.setLineWidth(0.3);
+    pdf.line(margin, 18, margin + 15, 18);
+    pdf.line(pageWidth - margin - 15, 18, pageWidth - margin, 18);
+
+    pdf.setTextColor(ivoire[0], ivoire[1], ivoire[2]);
+    pdf.setFont('times', 'normal');
+    pdf.setFontSize(28);
+    pdf.text('SERENVO', pageWidth / 2, 30, { align: 'center' });
+
+    pdf.setFontSize(8);
+    pdf.setTextColor(orClair[0], orClair[1], orClair[2]);
+    pdf.text('M A I S O N   D E   D E M A N D E   P R I V I L E G I E E', pageWidth / 2, 38, { align: 'center' });
+
+    pdf.setFontSize(11);
+    pdf.text('- Fiche de demande personnalisee -', pageWidth / 2, 50, { align: 'center' });
+
+    pdf.setFont('times', 'italic');
+    pdf.setFontSize(18);
+    pdf.text(demandeNumero, pageWidth / 2, 60, { align: 'center' });
+
+    y = 80;
+
+    // Bloc cliente
+    pdf.setFillColor(248, 243, 234);
+    pdf.rect(margin, y - 5, contentWidth, 25, 'F');
+    pdf.setDrawColor(or[0], or[1], or[2]);
+    pdf.setLineWidth(0.2);
+    pdf.rect(margin, y - 5, contentWidth, 25);
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(or[0], or[1], or[2]);
+    pdf.text('CLIENTE', margin + 5, y + 2);
+
+    pdf.setFont('times', 'normal');
+    pdf.setFontSize(16);
+    pdf.setTextColor(noir[0], noir[1], noir[2]);
+    pdf.text(`${data.prenom} ${data.nom}`, margin + 5, y + 12);
+
+    const dateStr = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    pdf.setFont('times', 'italic');
+    pdf.setFontSize(9);
+    pdf.setTextColor(grisMute[0], grisMute[1], grisMute[2]);
+    pdf.text(`Preparee le ${dateStr}`, pageWidth - margin - 5, y + 12, { align: 'right' });
+
+    y += 35;
+
+    function addSection(label, value, isLast = false) {
+      if (y > pageHeight - 30) {
+        pdf.addPage();
+        y = 20;
+      }
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7);
+      pdf.setTextColor(or[0], or[1], or[2]);
+      pdf.text(label.toUpperCase(), margin, y);
+
+      pdf.setFont('times', 'normal');
+      pdf.setFontSize(11);
+      pdf.setTextColor(noir[0], noir[1], noir[2]);
+
+      const lines = pdf.splitTextToSize(value || '-', contentWidth);
+      pdf.text(lines, margin, y + 6);
+
+      y += 8 + (lines.length - 1) * 5;
+
+      if (!isLast) {
+        pdf.setDrawColor(or[0], or[1], or[2]);
+        pdf.setLineWidth(0.1);
+        pdf.line(margin, y + 3, pageWidth - margin, y + 3);
+        y += 10;
+      } else {
+        y += 6;
+      }
+    }
+
+    addSection('Type de produit', data.typeProduit);
+    addSection('Occasion', data.occasion);
+    addSection('Style esthetique', data.design + (data.designAutre ? ` - ${data.designAutre}` : ''));
+    addSection('Maisons souhaitees', data.marques.join(' / ') || 'Surprenez-moi');
+    addSection('Couleurs', data.couleurType + (data.couleurPrecision ? ` - ${data.couleurPrecision}` : ''));
+
+    let refValue = data.referenceVisuelle;
+    if (data.referenceLien) refValue += ` - ${data.referenceLien}`;
+    if (photoFile) refValue += ` - Photo jointe : ${photoFile.name}`;
+    addSection('Reference visuelle', refValue);
+
+    addSection('Budget', data.prix + (data.prixPrecision ? ` - ${data.prixPrecision}` : ''));
+
+    if (aHorsCatalogue() && data.delai && data.delai !== 'N/A') {
+      addSection('Delai souhaite', data.delai + (data.delaiDate ? ` - ${data.delaiDate}` : ''));
+    }
+    addSection('Livraison', data.livraison);
+    addSection('Paiement souhaite', data.paiement);
+
+    if (data.visibilite.length > 0) {
+      addSection('Visibilite communaute', data.visibilite.join(' / '));
+    }
+    addSection('Source', data.sourceConnaissance + (data.sourcePrecision ? ` - ${data.sourcePrecision}` : ''));
+    if (data.messageLibre) {
+      addSection('Message personnel', `" ${data.messageLibre} "`);
+    }
+
+    // Photo en page dédiée
+    if (photoPreview) {
+      try {
+        pdf.addPage();
+        pdf.setFillColor(noir[0], noir[1], noir[2]);
+        pdf.rect(0, 0, pageWidth, 30, 'F');
+        pdf.setTextColor(orClair[0], orClair[1], orClair[2]);
+        pdf.setFont('times', 'italic');
+        pdf.setFontSize(14);
+        pdf.text('- Reference visuelle de la cliente -', pageWidth / 2, 18, { align: 'center' });
+
+        const imgProps = pdf.getImageProperties(photoPreview);
+        const imgRatio = imgProps.width / imgProps.height;
+        let imgWidth = contentWidth;
+        let imgHeight = imgWidth / imgRatio;
+
+        const maxHeight = pageHeight - 80;
+        if (imgHeight > maxHeight) {
+          imgHeight = maxHeight;
+          imgWidth = imgHeight * imgRatio;
+        }
+
+        const imgX = (pageWidth - imgWidth) / 2;
+        const imgY = 50;
+
+        pdf.addImage(photoPreview, 'JPEG', imgX, imgY, imgWidth, imgHeight);
+        pdf.setDrawColor(or[0], or[1], or[2]);
+        pdf.setLineWidth(0.3);
+        pdf.rect(imgX - 1, imgY - 1, imgWidth + 2, imgHeight + 2);
+      } catch (imgErr) {
+        console.warn('Image non ajoutée au PDF :', imgErr);
+      }
+    }
+
+    // Footer sur toutes les pages
+    const totalPages = pdf.internal.pages.length - 1;
+    for (let i = 1; i <= totalPages; i++) {
+      pdf.setPage(i);
+      pdf.setFillColor(noir[0], noir[1], noir[2]);
+      pdf.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+      pdf.setTextColor(orClair[0], orClair[1], orClair[2]);
+      pdf.setFont('times', 'italic');
+      pdf.setFontSize(9);
+      pdf.text("SERENVO - L'elegance, autrement", pageWidth / 2, pageHeight - 12, { align: 'center' });
+      pdf.setFontSize(7);
+      pdf.setTextColor(grisMute[0], grisMute[1], grisMute[2]);
+      pdf.text(`${demandeNumero}  -  Page ${i}/${totalPages}  -  eleganza@serenvo.fr`, pageWidth / 2, pageHeight - 6, { align: 'center' });
+    }
+
+    // Téléchargement avec méthode robuste
+    const filename = `Serenvo_${demandeNumero}_${data.prenom}_${data.nom}.pdf`.replace(/[^a-zA-Z0-9_\-\.]/g, '_');
+
+    // Méthode 1 : save() classique
+    pdf.save(filename);
+
+    return true;
+  } catch (err) {
+    console.error('Erreur génération PDF :', err);
+    showError("Une erreur est survenue lors de la création du PDF : " + err.message);
+    return false;
+  }
+}
+
+// Affichage d'erreur visible pour la cliente
+function showError(message) {
+  let errorDiv = document.getElementById('errorMessage');
+  if (!errorDiv) {
+    errorDiv = document.createElement('div');
+    errorDiv.id = 'errorMessage';
+    errorDiv.style.cssText = `
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      background: #2a1a1a; color: #f8f3ea; border: 1px solid #c9a961;
+      padding: 16px 24px; max-width: 90%; z-index: 9999;
+      font-family: 'Inter', sans-serif; font-size: 0.9rem; line-height: 1.5;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    `;
+    document.body.appendChild(errorDiv);
+  }
+  errorDiv.innerHTML = `<strong style="color:#e4c989;">⚠ Information</strong><br>${message}<br><button onclick="this.parentElement.remove()" style="margin-top:12px;background:transparent;border:1px solid #c9a961;color:#e4c989;padding:6px 14px;cursor:pointer;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;">Fermer</button>`;
+  setTimeout(() => { if (errorDiv && errorDiv.parentElement) errorDiv.remove(); }, 10000);
+}
+
+function getWhatsAppMessage() {
+  let msg = `✦ DEMANDE SERENVO — ${demandeNumero} ✦\n`;
+  msg += `━━━━━━━━━━━━━━━━━━━\n\n`;
+
+  msg += `👤 *CLIENTE*\n${data.prenom} ${data.nom}\n\n`;
+
+  msg += `🛍️ *PRODUIT*\n${data.typeProduit} · ${data.occasion}\n`;
+  msg += `Style : ${data.design}${data.designAutre ? ` (${data.designAutre})` : ''}\n\n`;
+
+  msg += `✨ *MAISONS SOUHAITÉES*\n${data.marques.join(' · ') || 'Surprenez-moi'}\n\n`;
+
+  msg += `🎨 *COULEURS*\n${data.couleurType}${data.couleurPrecision ? ` — ${data.couleurPrecision}` : ''}\n\n`;
+
+  if (data.referenceVisuelle && data.referenceVisuelle !== 'Non, je vous fais confiance') {
+    msg += `📸 *RÉFÉRENCE VISUELLE*\n${data.referenceVisuelle}`;
+    if (data.referenceLien) msg += `\nLien : ${data.referenceLien}`;
+    if (photoFile) msg += `\n(Photo à envoyer séparément sur WhatsApp)`;
+    msg += `\n\n`;
+  }
+
+  msg += `💰 *BUDGET*\n${data.prix}${data.prixPrecision ? ` — ${data.prixPrecision}` : ''}\n\n`;
+
+  if (aHorsCatalogue() && data.delai && data.delai !== 'N/A') {
+    msg += `⏱️ *DÉLAI SOUHAITÉ*\n${data.delai}${data.delaiDate ? ` (${data.delaiDate})` : ''}\n\n`;
+  }
+
+  msg += `🚚 *LIVRAISON*\n${data.livraison}\n\n`;
+
+  msg += `💳 *PAIEMENT*\n${data.paiement}`;
+  if (data.paiement === 'Revolut Pay') {
+    msg += ` (paiement externe sécurisé, plusieurs fois possible)`;
+  } else if (toutesHorsCatalogue() && data.paiement === 'PayPal') {
+    msg += ` (paiement externe sécurisé)`;
+  }
+  msg += `\n\n`;
+
+  if (data.visibilite.length > 0) {
+    msg += `📱 *VISIBILITÉ COMMUNAUTÉ*\n${data.visibilite.join(' · ')}\n\n`;
+  }
+
+  msg += `🔗 *SOURCE*\n${data.sourceConnaissance}${data.sourcePrecision ? ` — ${data.sourcePrecision}` : ''}\n\n`;
+
+  if (data.messageLibre) {
+    msg += `💬 *MESSAGE PERSONNEL*\n"${data.messageLibre}"\n\n`;
+  }
+
+  msg += `━━━━━━━━━━━━━━━━━━━\n`;
+  msg += `Préparée via le simulateur Serenvo\n`;
+  msg += `Le ${new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+
+  return msg;
+}
+
+function getEmailBody() {
+  let body = `Bonjour Serenvo,\n\n`;
+  body += `Je vous transmets ma demande personnalisee preparee via votre simulateur.\n\n`;
+  body += `========================================\n`;
+  body += `   DEMANDE ${demandeNumero}\n`;
+  body += `========================================\n\n`;
+
+  body += `CLIENTE\n`;
+  body += `${data.prenom} ${data.nom}\n\n`;
+
+  body += `PRODUIT\n`;
+  body += `${data.typeProduit} - ${data.occasion}\n`;
+  body += `Style : ${data.design}${data.designAutre ? ` (${data.designAutre})` : ''}\n\n`;
+
+  body += `MAISONS SOUHAITEES\n`;
+  body += `${data.marques.join(' / ') || 'Surprenez-moi'}\n\n`;
+
+  body += `COULEURS\n`;
+  body += `${data.couleurType}${data.couleurPrecision ? ` - ${data.couleurPrecision}` : ''}\n\n`;
+
+  if (data.referenceVisuelle && data.referenceVisuelle !== 'Non, je vous fais confiance') {
+    body += `REFERENCE VISUELLE\n`;
+    body += `${data.referenceVisuelle}`;
+    if (data.referenceLien) body += `\nLien : ${data.referenceLien}`;
+    if (photoFile) body += `\n(Photo envoyee separement)`;
+    body += `\n\n`;
+  }
+
+  body += `BUDGET\n`;
+  body += `${data.prix}${data.prixPrecision ? ` - ${data.prixPrecision}` : ''}\n\n`;
+
+  if (aHorsCatalogue() && data.delai && data.delai !== 'N/A') {
+    body += `DELAI SOUHAITE\n`;
+    body += `${data.delai}${data.delaiDate ? ` (${data.delaiDate})` : ''}\n\n`;
+  }
+
+  body += `LIVRAISON\n`;
+  body += `${data.livraison}\n\n`;
+
+  body += `PAIEMENT\n`;
+  body += `${data.paiement}`;
+  if (data.paiement === 'Revolut Pay') {
+    body += ` (paiement externe securise, plusieurs fois possible)`;
+  } else if (toutesHorsCatalogue() && data.paiement === 'PayPal') {
+    body += ` (paiement externe securise)`;
+  }
+  body += `\n\n`;
+
+  if (data.visibilite.length > 0) {
+    body += `VISIBILITE COMMUNAUTE\n`;
+    body += `${data.visibilite.join(' / ')}\n\n`;
+  }
+
+  body += `SOURCE\n`;
+  body += `${data.sourceConnaissance}${data.sourcePrecision ? ` - ${data.sourcePrecision}` : ''}\n\n`;
+
+  if (data.messageLibre) {
+    body += `MESSAGE PERSONNEL\n`;
+    body += `"${data.messageLibre}"\n\n`;
+  }
+
+  body += `========================================\n\n`;
+  body += `Cordialement,\n${data.prenom} ${data.nom}\n\n`;
+  body += `Demande preparee le ${new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} via le simulateur Serenvo.`;
+
+  return body;
+}
+
+function handleDownload() {
+  const success = generatePDF();
+  if (!success) return;
+
+  // Affiche la section d'envoi après téléchargement
+  setTimeout(() => {
+    document.getElementById('downloadSection').classList.add('hidden');
+    document.getElementById('sendSection').classList.remove('hidden');
+    // Scroll doux vers la section d'envoi
+    document.getElementById('sendSection').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 600);
+}
+
+function openWhatsApp() {
+  const msg = encodeURIComponent(getWhatsAppMessage());
+  const url = `https://wa.me/33615337355?text=${msg}`;
+  // Ouvre WhatsApp dans un nouvel onglet/app
+  window.open(url, '_blank');
+}
+
+function openEmail() {
+  const subject = encodeURIComponent(`Demande ${demandeNumero} - ${data.prenom} ${data.nom}`);
+  const body = encodeURIComponent(getEmailBody());
+  const mailtoLink = `mailto:eleganza@serenvo.fr?subject=${subject}&body=${body}`;
+
+  // Tentative d'ouverture du client mail
+  try {
+    window.location.href = mailtoLink;
+
+    // Fallback : si après 1.5s l'email n'a pas ouvert, on propose une alternative
+    setTimeout(() => {
+      showEmailFallback();
+    }, 1500);
+  } catch (e) {
+    showEmailFallback();
+  }
+}
+
+function showEmailFallback() {
+  // Affiche une boîte avec l'email à copier manuellement si le mailto ne marche pas
+  const existing = document.getElementById('emailFallback');
+  if (existing) return;
+
+  const fallback = document.createElement('div');
+  fallback.id = 'emailFallback';
+  fallback.style.cssText = `
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: #0a0908; border: 1px solid #c9a961; padding: 32px;
+    max-width: 90%; width: 480px; z-index: 10000;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+    font-family: 'Inter', sans-serif;
+  `;
+  fallback.innerHTML = `
+    <div style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:#e4c989;font-style:italic;margin-bottom:16px;text-align:center;">
+      Si votre client mail ne s'est pas ouvert
+    </div>
+    <p style="color:#d8cfc1;font-size:0.9rem;line-height:1.6;margin-bottom:20px;">
+      Vous pouvez nous écrire directement à l'adresse suivante en joignant votre fiche PDF téléchargée :
+    </p>
+    <div style="background:rgba(201,169,97,0.1);border:1px solid #c9a961;padding:14px;text-align:center;margin-bottom:20px;">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:#e4c989;letter-spacing:0.05em;">
+        eleganza@serenvo.fr
+      </div>
+    </div>
+    <button onclick="copyEmail()" style="width:100%;padding:14px;background:transparent;color:#e4c989;border:1px solid #c9a961;font-family:'Inter',sans-serif;font-size:11px;letter-spacing:0.3em;text-transform:uppercase;cursor:pointer;margin-bottom:12px;">
+      📋 Copier l'adresse email
+    </button>
+    <button onclick="document.getElementById('emailFallback').remove()" style="width:100%;padding:10px;background:transparent;color:#8a8278;border:1px solid rgba(201,169,97,0.2);font-family:'Inter',sans-serif;font-size:10px;letter-spacing:0.3em;text-transform:uppercase;cursor:pointer;">
+      Fermer
+    </button>
+    <div id="emailCopied" style="margin-top:12px;text-align:center;color:#e4c989;font-style:italic;font-size:0.85rem;display:none;">
+      ✓ Adresse copiée
+    </div>
+  `;
+  document.body.appendChild(fallback);
+}
+
+function copyEmail() {
+  navigator.clipboard.writeText('eleganza@serenvo.fr').then(() => {
+    const msg = document.getElementById('emailCopied');
+    if (msg) {
+      msg.style.display = 'block';
+      setTimeout(() => { msg.style.display = 'none'; }, 2000);
+    }
+  }).catch(() => {
+    alert('Email : eleganza@serenvo.fr');
+  });
+}
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('DOMContentLoaded', () => {
+  // Récupération des paramètres URL (si vient du formulaire d'inscription)
+  const urlParams = new URLSearchParams(window.location.search);
+  const prenomParam = urlParams.get('prenom');
+  const nomParam = urlParams.get('nom');
+  if (prenomParam) data.prenom = prenomParam;
+  if (nomParam) data.nom = nomParam;
+
+  // Animation de la ligne dorée du hero
+  setTimeout(() => {
+    const heroLine = document.querySelector('.hero-line');
+    if (heroLine) heroLine.style.width = '120px';
+  }, 800);
+
+  // Vérifie le chargement de jsPDF
+  let attempts = 0;
+  const checkJsPDF = setInterval(() => {
+    attempts++;
+    if (window.jspdf && window.jspdf.jsPDF) {
+      clearInterval(checkJsPDF);
+      console.log('✓ jsPDF chargé avec succès');
+    } else if (attempts > 30) {
+      clearInterval(checkJsPDF);
+      console.warn('⚠ jsPDF n\'a pas pu être chargé');
+    }
+  }, 200);
+});
+</script>
+
+</body>
+</html>
