@@ -1036,27 +1036,33 @@ function sendDiscussWhatsApp() {
 }
 
 function sendInscriptionAndRedirect() {
-  let msg = `Bonjour Serenvo ✦\n\n`;
-  msg += `Je viens de finaliser ma demande Cliente Signature (n° *${demandeNumero}*).\n`;
-  msg += `Je souhaite enchaîner directement avec ma première demande personnalisée d'article via votre simulateur.\n\n`;
-  msg += `Voici un résumé de mon inscription :\n\n`;
-  msg += `👤 *${data.prenom} ${data.nom}*\n`;
-  msg += `📧 ${data.email}\n`;
-  msg += `📱 ${data.telephone}\n\n`;
-  msg += `✨ Place du luxe : ${data.placeLuxe}\n`;
-  msg += `💰 Budget mensuel : ${data.budget}\n`;
-  msg += `📅 Fréquence : ${data.frequence}\n`;
-  msg += `🎯 Aspect privilégié : ${data.aspectProgramme}\n\n`;
-  msg += `Je vous transmets ma demande d'article juste après ce message.`;
+  // Sauvegarde toutes les infos d'inscription dans le navigateur (sessionStorage)
+  // pour qu'elles puissent être récupérées dans le simulateur
+  try {
+    const inscriptionData = {
+      demandeNumero: demandeNumero,
+      prenom: data.prenom,
+      nom: data.nom,
+      email: data.email,
+      telephone: data.telephone,
+      placeLuxe: data.placeLuxe,
+      budget: data.budget,
+      frequence: data.frequence,
+      aspectProgramme: data.aspectProgramme,
+      attentes: data.attentes,
+      precisions: data.precisions,
+      signature: data.signature,
+      dateInscription: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+    };
+    sessionStorage.setItem('serenvoInscription', JSON.stringify(inscriptionData));
+  } catch (e) {
+    console.warn('Impossible de sauvegarder les données :', e);
+  }
 
-  const url = `https://wa.me/33615337355?text=${encodeURIComponent(msg)}`;
-  window.open(url, '_blank');
-
-  // Redirection vers le simulateur (à adapter une fois hébergé)
-  setTimeout(() => {
-    const params = new URLSearchParams({ prenom: data.prenom, nom: data.nom });
-    window.location.href = `/demande?${params.toString()}`;
-  }, 2000);
+  // Redirection directe vers le simulateur, SANS ouvrir WhatsApp
+  // (le message complet sera envoyé à la fin du simulateur avec inscription + demande)
+  const params = new URLSearchParams({ prenom: data.prenom, nom: data.nom });
+  window.location.href = `/demande?${params.toString()}`;
 }
 
 window.addEventListener('DOMContentLoaded', () => {

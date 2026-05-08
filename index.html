@@ -7,267 +7,301 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: #0a0908;
-    color: #f8f3ea;
-    font-family: 'Inter', -apple-system, sans-serif;
-    line-height: 1.7;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+  body { background: #0a0908; color: #f8f3ea; font-family: 'Inter', -apple-system, sans-serif; line-height: 1.7; min-height: 100vh; overflow-x: hidden; }
   em { font-style: italic; color: #e4c989; font-weight: 400; }
-
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(30px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes lineGrow {
-    from { width: 0; }
-    to { width: 200px; }
-  }
-  @keyframes pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(201, 169, 97, 0.3); }
-    50% { box-shadow: 0 0 0 12px rgba(201, 169, 97, 0); }
-  }
-
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes lineGrow { from { width: 0; } to { width: 200px; } }
   .grid-bg {
-    background-image:
-      linear-gradient(rgba(201, 169, 97, 0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(201, 169, 97, 0.04) 1px, transparent 1px);
+    background-image: linear-gradient(rgba(201, 169, 97, 0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(201, 169, 97, 0.04) 1px, transparent 1px);
     background-size: 80px 80px;
   }
-
+  .lang-selector { position: fixed; top: 24px; right: 24px; z-index: 100; }
+  .lang-current {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 16px;
+    background: rgba(10, 9, 8, 0.85); backdrop-filter: blur(10px);
+    border: 1px solid rgba(201, 169, 97, 0.3);
+    color: #e4c989; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.3s; font-weight: 500;
+  }
+  .lang-current:hover { border-color: #c9a961; background: rgba(201, 169, 97, 0.1); }
+  .lang-current::after { content: '▾'; margin-left: 4px; font-size: 10px; transition: transform 0.3s; }
+  .lang-selector.open .lang-current::after { transform: rotate(180deg); }
+  .lang-dropdown {
+    position: absolute; top: calc(100% + 8px); right: 0;
+    background: rgba(10, 9, 8, 0.95); backdrop-filter: blur(10px);
+    border: 1px solid rgba(201, 169, 97, 0.3);
+    min-width: 160px;
+    opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.3s;
+  }
+  .lang-selector.open .lang-dropdown { opacity: 1; visibility: visible; transform: translateY(0); }
+  .lang-option {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px;
+    color: #d8cfc1; font-size: 12px; cursor: pointer; transition: all 0.2s;
+    border-bottom: 1px solid rgba(201, 169, 97, 0.1);
+  }
+  .lang-option:last-child { border-bottom: none; }
+  .lang-option:hover { background: rgba(201, 169, 97, 0.1); color: #e4c989; }
+  .lang-option.active { color: #e4c989; background: rgba(201, 169, 97, 0.06); }
+  .lang-flag { font-size: 16px; }
   .wrap {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 60px 24px;
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 80px 24px 60px;
     background: radial-gradient(ellipse at center, rgba(201,169,97,0.08) 0%, transparent 60%), #0a0908;
   }
-
-  .container {
-    max-width: 960px;
-    width: 100%;
-    text-align: center;
-  }
-
+  .container { max-width: 960px; width: 100%; text-align: center; }
   .logo-mark {
     font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(3.5rem, 8vw, 5.5rem);
-    font-weight: 300;
-    color: #f8f3ea;
-    line-height: 1;
-    margin-bottom: 20px;
+    font-size: clamp(3.5rem, 8vw, 5.5rem); font-weight: 300;
+    color: #f8f3ea; line-height: 1; margin-bottom: 20px;
     text-shadow: 0 0 40px rgba(201, 169, 97, 0.3);
     animation: fadeUp 1s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
   .logo-mark span { color: #e4c989; }
-
   .name {
     font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(2rem, 4vw, 3rem);
-    font-weight: 300;
-    letter-spacing: 0.4em;
-    color: #f8f3ea;
-    margin-bottom: 24px;
+    font-size: clamp(2rem, 4vw, 3rem); font-weight: 300;
+    letter-spacing: 0.4em; color: #f8f3ea; margin-bottom: 24px;
     animation: fadeUp 1s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
   }
-
   .line {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, #c9a961, transparent);
-    margin: 0 auto 28px;
-    width: 0;
+    height: 1px; background: linear-gradient(90deg, transparent, #c9a961, transparent);
+    margin: 0 auto 28px; width: 0;
     animation: lineGrow 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.6s forwards;
   }
-
   .tagline {
-    font-size: 11px;
-    letter-spacing: 0.5em;
-    text-transform: uppercase;
-    color: #e4c989;
-    margin-bottom: 48px;
+    font-size: 11px; letter-spacing: 0.5em; text-transform: uppercase;
+    color: #e4c989; margin-bottom: 48px;
     animation: fadeUp 1s cubic-bezier(0.22, 1, 0.36, 1) 1s both;
   }
-
   .title {
     font-family: 'Cormorant Garamond', serif;
     font-size: clamp(1.6rem, 3.5vw, 2.4rem);
-    color: #f8f3ea;
-    font-weight: 300;
-    line-height: 1.3;
-    margin-bottom: 24px;
+    color: #f8f3ea; font-weight: 300; line-height: 1.3; margin-bottom: 24px;
     animation: fadeUp 1s cubic-bezier(0.22, 1, 0.36, 1) 1.3s both;
   }
-
   .subtitle {
     font-family: 'Cormorant Garamond', serif;
     font-size: clamp(1rem, 1.6vw, 1.2rem);
-    color: #d8cfc1;
-    font-style: italic;
-    max-width: 560px;
-    margin: 0 auto 64px;
-    line-height: 1.7;
+    color: #d8cfc1; font-style: italic;
+    max-width: 560px; margin: 0 auto 64px; line-height: 1.7;
     animation: fadeUp 1s cubic-bezier(0.22, 1, 0.36, 1) 1.6s both;
   }
-
   .paths {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    max-width: 800px;
-    margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+    max-width: 800px; margin: 0 auto;
     animation: fadeUp 1s cubic-bezier(0.22, 1, 0.36, 1) 2s both;
   }
-  @media (max-width: 700px) {
-    .paths { grid-template-columns: 1fr; gap: 20px; }
-  }
-
+  @media (max-width: 700px) { .paths { grid-template-columns: 1fr; gap: 20px; } }
   .path-card {
     padding: 40px 32px;
     background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%);
     border: 1px solid rgba(201, 169, 97, 0.15);
     transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-    text-decoration: none;
-    color: inherit;
-    display: block;
-    position: relative;
-    overflow: hidden;
+    text-decoration: none; color: inherit; display: block;
+    position: relative; overflow: hidden;
   }
   .path-card::before, .path-card::after {
-    content: '';
-    position: absolute;
-    width: 24px; height: 24px;
-    border: 1px solid #c9a961;
-    opacity: 0;
-    transition: opacity 0.4s;
+    content: ''; position: absolute; width: 24px; height: 24px;
+    border: 1px solid #c9a961; opacity: 0; transition: opacity 0.4s;
   }
   .path-card::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
   .path-card::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
   .path-card:hover {
-    border-color: #c9a961;
-    transform: translateY(-4px);
+    border-color: #c9a961; transform: translateY(-4px);
     background: linear-gradient(180deg, rgba(201, 169, 97, 0.06) 0%, rgba(201, 169, 97, 0) 100%);
   }
-  .path-card:hover::before, .path-card:hover::after {
-    opacity: 1;
-  }
-
-  .path-icon {
-    font-size: 2.2rem;
-    color: #c9a961;
-    margin-bottom: 24px;
-  }
-
+  .path-card:hover::before, .path-card:hover::after { opacity: 1; }
+  .path-icon { font-size: 2.2rem; color: #c9a961; margin-bottom: 24px; }
   .path-title {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 1.5rem;
-    color: #f8f3ea;
-    margin-bottom: 14px;
-    line-height: 1.3;
+    font-size: 1.5rem; color: #f8f3ea; margin-bottom: 14px; line-height: 1.3;
   }
   .path-title em { font-style: italic; color: #e4c989; }
-
-  .path-desc {
-    font-size: 0.92rem;
-    color: #8a8278;
-    line-height: 1.6;
-    margin-bottom: 28px;
-  }
-
+  .path-desc { font-size: 0.92rem; color: #8a8278; line-height: 1.6; margin-bottom: 28px; }
   .path-cta {
-    font-size: 10px;
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-    color: #e4c989;
-    padding-top: 16px;
-    border-top: 1px solid rgba(201, 169, 97, 0.15);
+    font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: #e4c989; padding-top: 16px; border-top: 1px solid rgba(201, 169, 97, 0.15);
   }
-
-  .footer {
-    margin-top: 80px;
-    padding-top: 32px;
-    text-align: center;
-    animation: fadeUp 1s cubic-bezier(0.22, 1, 0.36, 1) 2.4s both;
-  }
-  .footer-name {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.2rem;
-    color: #e4c989;
-    letter-spacing: 0.4em;
-    margin-bottom: 8px;
-  }
-  .footer-tag {
-    font-size: 9px;
-    letter-spacing: 0.4em;
-    text-transform: uppercase;
-    color: #8a8278;
-    margin-bottom: 24px;
-  }
+  .footer { margin-top: 80px; padding-top: 32px; text-align: center; animation: fadeUp 1s cubic-bezier(0.22, 1, 0.36, 1) 2.4s both; }
+  .footer-name { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; color: #e4c989; letter-spacing: 0.4em; margin-bottom: 8px; }
+  .footer-tag { font-size: 9px; letter-spacing: 0.4em; text-transform: uppercase; color: #8a8278; margin-bottom: 24px; }
   .footer-link {
-    font-size: 11px;
-    color: #c9a961;
-    text-decoration: none;
-    border-bottom: 1px solid rgba(201, 169, 97, 0.3);
-    padding-bottom: 2px;
+    font-size: 11px; color: #c9a961; text-decoration: none;
+    border-bottom: 1px solid rgba(201, 169, 97, 0.3); padding-bottom: 2px;
     transition: color 0.3s, border-color 0.3s;
   }
-  .footer-link:hover {
-    color: #e4c989;
-    border-color: #e4c989;
-  }
+  .footer-link:hover { color: #e4c989; border-color: #e4c989; }
 </style>
 </head>
 <body class="grid-bg">
 
+<div class="lang-selector" id="langSelector">
+  <div class="lang-current" onclick="toggleLangDropdown()">
+    <span class="lang-flag" id="currentFlag">🇫🇷</span>
+    <span id="currentLang">FR</span>
+  </div>
+  <div class="lang-dropdown">
+    <div class="lang-option active" data-lang="fr" onclick="setLanguage('fr')"><span class="lang-flag">🇫🇷</span><span>Français</span></div>
+    <div class="lang-option" data-lang="en" onclick="setLanguage('en')"><span class="lang-flag">🇬🇧</span><span>English</span></div>
+    <div class="lang-option" data-lang="es" onclick="setLanguage('es')"><span class="lang-flag">🇪🇸</span><span>Español</span></div>
+    <div class="lang-option" data-lang="de" onclick="setLanguage('de')"><span class="lang-flag">🇩🇪</span><span>Deutsch</span></div>
+  </div>
+</div>
+
 <div class="wrap">
   <div class="container">
-
     <div class="logo-mark"><span>S</span>R</div>
     <div class="name">SERENVO</div>
     <div class="line"></div>
-    <div class="tagline">— Espace Privilégié —</div>
+    <div class="tagline" data-i18n="tagline">— Espace Privilégié —</div>
 
-    <h1 class="title">Bienvenue dans votre <em>univers Serenvo</em>.</h1>
-    <p class="subtitle">
-      Choisissez votre parcours selon vos besoins :
-      rejoignez la communauté Cliente Signature,
-      ou composez directement votre demande personnalisée.
-    </p>
+    <h1 class="title">
+      <span data-i18n="title-1">Bienvenue dans votre</span>
+      <em data-i18n="title-2">univers Serenvo</em>.
+    </h1>
+    <p class="subtitle" data-i18n="subtitle">Choisissez votre parcours selon vos besoins : rejoignez la communauté Cliente Signature, ou composez directement votre demande personnalisée.</p>
 
     <div class="paths">
-
       <a href="/inscription" class="path-card">
         <div class="path-icon">✦</div>
-        <h3 class="path-title">Devenir <em>Cliente Signature</em></h3>
-        <p class="path-desc">
-          Demandez votre accès privilégié au programme et bénéficiez
-          d'un accompagnement personnalisé sur mesure.
-        </p>
-        <div class="path-cta">Faire ma demande →</div>
+        <h3 class="path-title">
+          <span data-i18n="path1-title-1">Devenir</span>
+          <em data-i18n="path1-title-2">Cliente Signature</em>
+        </h3>
+        <p class="path-desc" data-i18n="path1-desc">Demandez votre accès privilégié au programme et bénéficiez d'un accompagnement personnalisé sur mesure.</p>
+        <div class="path-cta" data-i18n="path1-cta">Faire ma demande →</div>
       </a>
 
       <a href="/demande" class="path-card">
         <div class="path-icon">◇</div>
-        <h3 class="path-title">Composer une <em>demande personnalisée</em></h3>
-        <p class="path-desc">
-          Trouvez la pièce qui vous correspond — du catalogue
-          aux maisons exclusives sur demande.
-        </p>
-        <div class="path-cta">Accéder au simulateur →</div>
+        <h3 class="path-title">
+          <span data-i18n="path2-title-1">Composer une</span>
+          <em data-i18n="path2-title-2">demande personnalisée</em>
+        </h3>
+        <p class="path-desc" data-i18n="path2-desc">Trouvez la pièce qui vous correspond — du catalogue aux maisons exclusives sur demande.</p>
+        <div class="path-cta" data-i18n="path2-cta">Accéder au simulateur →</div>
       </a>
-
     </div>
 
     <div class="footer">
       <div class="footer-name">SERENVO</div>
-      <div class="footer-tag">— L'élégance, autrement —</div>
-      <a href="https://serenvo.fr" class="footer-link">← Retour au site principal</a>
+      <div class="footer-tag" data-i18n="footer-tag">— L'élégance, autrement —</div>
+      <a href="https://serenvo.fr" class="footer-link" data-i18n="footer-link">← Retour au site principal</a>
     </div>
-
   </div>
 </div>
+
+<script>
+const translations = {
+  fr: {
+    'tagline': '— Espace Privilégié —',
+    'title-1': 'Bienvenue dans votre',
+    'title-2': 'univers Serenvo',
+    'subtitle': 'Choisissez votre parcours selon vos besoins : rejoignez la communauté Cliente Signature, ou composez directement votre demande personnalisée.',
+    'path1-title-1': 'Devenir',
+    'path1-title-2': 'Cliente Signature',
+    'path1-desc': "Demandez votre accès privilégié au programme et bénéficiez d'un accompagnement personnalisé sur mesure.",
+    'path1-cta': 'Faire ma demande →',
+    'path2-title-1': 'Composer une',
+    'path2-title-2': 'demande personnalisée',
+    'path2-desc': 'Trouvez la pièce qui vous correspond — du catalogue aux maisons exclusives sur demande.',
+    'path2-cta': 'Accéder au simulateur →',
+    'footer-tag': "— L'élégance, autrement —",
+    'footer-link': '← Retour au site principal'
+  },
+  en: {
+    'tagline': '— Privileged Space —',
+    'title-1': 'Welcome to your',
+    'title-2': 'Serenvo universe',
+    'subtitle': 'Choose your path according to your needs: join the Signature Client community, or directly compose your personalized request.',
+    'path1-title-1': 'Become a',
+    'path1-title-2': 'Signature Client',
+    'path1-desc': 'Request your privileged access to the programme and benefit from a personalized, tailor-made support.',
+    'path1-cta': 'Make my request →',
+    'path2-title-1': 'Compose a',
+    'path2-title-2': 'personalized request',
+    'path2-desc': 'Find the piece that suits you — from our catalogue to exclusive houses on request.',
+    'path2-cta': 'Access the simulator →',
+    'footer-tag': '— Elegance, redefined —',
+    'footer-link': '← Back to main website'
+  },
+  es: {
+    'tagline': '— Espacio Privilegiado —',
+    'title-1': 'Bienvenida a tu',
+    'title-2': 'universo Serenvo',
+    'subtitle': 'Elige tu recorrido según tus necesidades: únete a la comunidad Cliente Signature, o compone directamente tu solicitud personalizada.',
+    'path1-title-1': 'Convertirse en',
+    'path1-title-2': 'Cliente Signature',
+    'path1-desc': 'Solicita tu acceso privilegiado al programa y benefíciate de un acompañamiento personalizado a medida.',
+    'path1-cta': 'Hacer mi solicitud →',
+    'path2-title-1': 'Componer una',
+    'path2-title-2': 'solicitud personalizada',
+    'path2-desc': 'Encuentra la pieza que te corresponde — desde el catálogo hasta las casas exclusivas bajo pedido.',
+    'path2-cta': 'Acceder al simulador →',
+    'footer-tag': '— La elegancia, de otra manera —',
+    'footer-link': '← Volver al sitio principal'
+  },
+  de: {
+    'tagline': '— Privilegierter Raum —',
+    'title-1': 'Willkommen in Ihrem',
+    'title-2': 'Serenvo-Universum',
+    'subtitle': 'Wählen Sie Ihren Weg nach Ihren Bedürfnissen: Treten Sie der Signature-Kundengemeinschaft bei oder erstellen Sie direkt Ihre persönliche Anfrage.',
+    'path1-title-1': 'Werden Sie',
+    'path1-title-2': 'Signature-Kundin',
+    'path1-desc': 'Beantragen Sie Ihren privilegierten Zugang zum Programm und profitieren Sie von einer maßgeschneiderten persönlichen Betreuung.',
+    'path1-cta': 'Anfrage stellen →',
+    'path2-title-1': 'Erstellen Sie eine',
+    'path2-title-2': 'persönliche Anfrage',
+    'path2-desc': 'Finden Sie das Stück, das zu Ihnen passt — vom Katalog bis zu exklusiven Häusern auf Anfrage.',
+    'path2-cta': 'Zum Simulator →',
+    'footer-tag': '— Eleganz, neu definiert —',
+    'footer-link': '← Zurück zur Hauptseite'
+  }
+};
+
+const langLabels = {
+  fr: { flag: '🇫🇷', code: 'FR' },
+  en: { flag: '🇬🇧', code: 'EN' },
+  es: { flag: '🇪🇸', code: 'ES' },
+  de: { flag: '🇩🇪', code: 'DE' }
+};
+
+function toggleLangDropdown() {
+  document.getElementById('langSelector').classList.toggle('open');
+}
+
+function setLanguage(lang) {
+  try { localStorage.setItem('serenvoLang', lang); } catch (e) {}
+  document.getElementById('currentFlag').textContent = langLabels[lang].flag;
+  document.getElementById('currentLang').textContent = langLabels[lang].code;
+  document.querySelectorAll('.lang-option').forEach(opt => {
+    opt.classList.toggle('active', opt.dataset.lang === lang);
+  });
+  const t = translations[lang];
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    if (t[key]) el.textContent = t[key];
+  });
+  document.documentElement.lang = lang;
+  document.getElementById('langSelector').classList.remove('open');
+}
+
+document.addEventListener('click', (e) => {
+  const selector = document.getElementById('langSelector');
+  if (!selector.contains(e.target)) selector.classList.remove('open');
+});
+
+window.addEventListener('DOMContentLoaded', () => {
+  let savedLang = 'fr';
+  try {
+    const saved = localStorage.getItem('serenvoLang');
+    if (saved && translations[saved]) savedLang = saved;
+  } catch (e) {}
+  setLanguage(savedLang);
+});
+</script>
 
 </body>
 </html>

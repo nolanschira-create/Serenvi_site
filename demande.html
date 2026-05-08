@@ -976,7 +976,7 @@ function renderStep1() {
 }
 
 function renderStep2() {
-  const types = ['Bandoulière', 'Sac à main', 'Cabas', 'Sac seau', 'Portefeuille', 'Fragrance'];
+  const types = ['Bandoulière', 'Sac à main', 'Cabas', 'Sac seau', 'Portefeuille'];
   let html = `
     <h2 class="step-title">Que <em>recherchez-vous</em> ?</h2>
     <p class="step-desc">Sélectionnez la catégorie qui vous intéresse.</p>
@@ -1579,7 +1579,39 @@ function showError(message) {
 }
 
 function getWhatsAppMessage() {
-  let msg = `✦ DEMANDE SERENVO — ${demandeNumero} ✦\n`;
+  // Récupère les infos d'inscription si la cliente vient du formulaire
+  let inscription = null;
+  try {
+    const stored = sessionStorage.getItem('serenvoInscription');
+    if (stored) inscription = JSON.parse(stored);
+  } catch (e) {}
+
+  let msg = '';
+
+  // Si la cliente vient du formulaire d'inscription, on inclut tout en haut
+  if (inscription) {
+    msg += `✦ DEMANDE COMPLÈTE SERENVO ✦\n`;
+    msg += `━━━━━━━━━━━━━━━━━━━\n\n`;
+
+    msg += `🌟 *INSCRIPTION CLIENTE SIGNATURE*\n`;
+    msg += `Référence : ${inscription.demandeNumero}\n\n`;
+    msg += `👤 *${inscription.prenom} ${inscription.nom}*\n`;
+    msg += `📧 ${inscription.email}\n`;
+    msg += `📱 ${inscription.telephone}\n\n`;
+    msg += `✨ Place du luxe : ${inscription.placeLuxe}\n`;
+    msg += `💰 Budget mensuel : ${inscription.budget}\n`;
+    msg += `📅 Fréquence : ${inscription.frequence}\n`;
+    msg += `🎯 Aspect privilégié : ${inscription.aspectProgramme}\n\n`;
+    msg += `💎 *Attentes* :\n"${inscription.attentes}"\n\n`;
+    if (inscription.precisions) {
+      msg += `📝 *Précisions* :\n"${inscription.precisions}"\n\n`;
+    }
+    msg += `✓ Signature électronique apposée le ${inscription.dateInscription}\n\n`;
+    msg += `━━━━━━━━━━━━━━━━━━━\n\n`;
+  }
+
+  // Section demande d'article
+  msg += `🛍️ *DEMANDE D'ARTICLE — ${demandeNumero}*\n`;
   msg += `━━━━━━━━━━━━━━━━━━━\n\n`;
 
   msg += `👤 *CLIENTE*\n${data.prenom} ${data.nom}\n\n`;
@@ -1625,7 +1657,11 @@ function getWhatsAppMessage() {
   }
 
   msg += `━━━━━━━━━━━━━━━━━━━\n`;
-  msg += `Préparée via le simulateur Serenvo\n`;
+  if (inscription) {
+    msg += `Inscription Cliente Signature + Demande d'article\n`;
+  } else {
+    msg += `Préparée via le simulateur Serenvo\n`;
+  }
   msg += `Le ${new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`;
 
   return msg;
