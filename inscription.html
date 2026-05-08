@@ -993,6 +993,45 @@ function clearSignature() {
   updateNextButton();
 }
 
+// ============================================================
+// ENVOI VERS GOOGLE SHEET (silencieux, en arrière-plan)
+// ============================================================
+const GOOGLE_SHEET_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxY8qH4vvnl-YbzI-_lyZySaW-w0ltBWJy-fs9r-NdkBmvqi7uzdedL76FxG5dkTUcW/exec';
+
+function sendToGoogleSheet() {
+  // Évite d'envoyer plusieurs fois la même inscription
+  if (window._serenvoSheetSent) return;
+  window._serenvoSheetSent = true;
+
+  const now = new Date();
+  const payload = {
+    date: now.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+    heure: now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+    demandeNumero: demandeNumero,
+    prenom: data.prenom || '',
+    nom: data.nom || '',
+    email: data.email || '',
+    telephone: data.telephone || '',
+    placeLuxe: data.placeLuxe || '',
+    budget: data.budget || '',
+    frequence: data.frequence || '',
+    aspectProgramme: data.aspectProgramme || '',
+    attentes: data.attentes || '',
+    precisions: data.precisions || ''
+  };
+
+  // Envoi en mode "no-cors" : on n'attend pas la réponse, ça part en arrière-plan
+  // C'est volontaire pour que ça soit invisible pour la cliente
+  fetch(GOOGLE_SHEET_WEBHOOK_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).catch(err => {
+    console.warn('Erreur envoi Google Sheet :', err);
+  });
+}
+
 function goToFinal() {
   const num = Math.floor(1000 + Math.random() * 9000);
   demandeNumero = `SRV-CS-${num}`;
@@ -1005,6 +1044,10 @@ function goToFinal() {
   document.getElementById('questionsSection').classList.add('hidden');
 
   goToScreen('finale');
+
+  // Envoi automatique vers Google Sheet dès l'arrivée sur l'écran final
+  // Peu importe le chemin choisi ensuite par la cliente
+  sendToGoogleSheet();
 }
 
 function selectPath(path) {
