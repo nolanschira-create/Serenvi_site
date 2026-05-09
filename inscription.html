@@ -6,6 +6,40 @@
 <title>Serenvo · Devenir Cliente Signature</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
+  /* ============ SÉLECTEUR DE LANGUE ============ */
+  .lang-selector { position: fixed; top: 20px; right: 20px; z-index: 999; }
+  .lang-current {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 14px;
+    background: rgba(10, 9, 8, 0.85); backdrop-filter: blur(10px);
+    border: 1px solid rgba(201, 169, 97, 0.3);
+    color: #e4c989; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.3s; font-weight: 500;
+    font-family: 'Inter', sans-serif;
+  }
+  .lang-current:hover { border-color: #c9a961; background: rgba(201, 169, 97, 0.1); }
+  .lang-current::after { content: '▾'; margin-left: 4px; font-size: 10px; transition: transform 0.3s; }
+  .lang-selector.open .lang-current::after { transform: rotate(180deg); }
+  .lang-dropdown {
+    position: absolute; top: calc(100% + 6px); right: 0;
+    background: rgba(10, 9, 8, 0.95); backdrop-filter: blur(10px);
+    border: 1px solid rgba(201, 169, 97, 0.3);
+    min-width: 150px;
+    opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.3s;
+  }
+  .lang-selector.open .lang-dropdown { opacity: 1; visibility: visible; transform: translateY(0); }
+  .lang-option {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 14px;
+    color: #d8cfc1; font-size: 12px; cursor: pointer; transition: all 0.2s;
+    border-bottom: 1px solid rgba(201, 169, 97, 0.1);
+    font-family: 'Inter', sans-serif;
+  }
+  .lang-option:last-child { border-bottom: none; }
+  .lang-option:hover { background: rgba(201, 169, 97, 0.1); color: #e4c989; }
+  .lang-option.active { color: #e4c989; background: rgba(201, 169, 97, 0.06); }
+  .lang-flag { font-size: 15px; }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     background: #0a0908;
@@ -515,6 +549,21 @@
 </head>
 <body>
 
+<!-- SÉLECTEUR DE LANGUE -->
+<div class="lang-selector" id="langSelector">
+  <div class="lang-current" onclick="toggleLangDropdown()">
+    <span class="lang-flag" id="currentFlag">🇫🇷</span>
+    <span id="currentLang">FR</span>
+  </div>
+  <div class="lang-dropdown">
+    <div class="lang-option active" data-lang="fr" onclick="setLanguage('fr')"><span class="lang-flag">🇫🇷</span><span>Français</span></div>
+    <div class="lang-option" data-lang="en" onclick="setLanguage('en')"><span class="lang-flag">🇬🇧</span><span>English</span></div>
+    <div class="lang-option" data-lang="es" onclick="setLanguage('es')"><span class="lang-flag">🇪🇸</span><span>Español</span></div>
+    <div class="lang-option" data-lang="de" onclick="setLanguage('de')"><span class="lang-flag">🇩🇪</span><span>Deutsch</span></div>
+  </div>
+</div>
+
+
 <!-- HERO -->
 <div class="screen active grid-bg" id="hero">
   <div class="hero">
@@ -675,8 +724,664 @@ const data = {
 let demandeNumero = '';
 let currentStep = 1;
 const totalSteps = 8;
+let currentLang = 'fr';
 
-const stepsLabels = ['Identité', 'Coordonnées', 'Place du luxe', 'Budget', 'Fréquence', 'Programme', 'Vos attentes', 'Signature'];
+// ============================================================
+// SYSTÈME MULTILINGUE (i18n)
+// ============================================================
+// IMPORTANT : data.placeLuxe, data.budget, data.frequence, data.aspectProgramme
+// stockent TOUJOURS la valeur EN FRANÇAIS pour le Google Sheet et WhatsApp.
+// Les traductions sont uniquement pour l'affichage à la cliente.
+
+const i18n = {
+  fr: {
+    // Hero
+    'tagline': '— Cliente Signature —',
+    'hero-title-1': 'Demandez votre',
+    'hero-title-2': 'accès privilégié',
+    'hero-sub': "Une expérience d'achat haut de gamme,<br>pensée pour celles qui font de l'exception un art de vivre.",
+    'hero-btn': '◆ Commencer ma demande',
+    // Intro
+    'intro-eyebrow': '◆ Avant de commencer',
+    'intro-title-1': 'Bienvenue dans le programme',
+    'intro-title-2': 'Cliente Signature',
+    'intro-p1-1': 'Vous souhaitez faire votre demande pour ',
+    'intro-p1-highlight': 'grandir avec Serenvo',
+    'intro-p1-2': ', accéder à nos avantages exclusifs et être accompagnée à chaque étape de votre parcours luxe.',
+    'intro-p2': "Ce formulaire nous permet de mieux vous connaître afin de vous offrir une expérience à la hauteur de vos attentes : choix éclairés, conseils personnalisés, et réponses précises à toutes vos interrogations.",
+    'intro-p3-highlight': 'À l\'issue de votre demande',
+    'intro-p3': ', vous pourrez choisir d\'échanger avec nous ou de formuler directement votre première recherche personnalisée d\'article.',
+    'intro-btn': 'Composer ma demande',
+    // Form general
+    'step-label': 'Étape',
+    'btn-prev': '← Précédent',
+    'btn-next': 'Suivant →',
+    'btn-finalize': 'Finaliser ma demande →',
+    'steps-labels': ['Identité', 'Coordonnées', 'Place du luxe', 'Budget', 'Fréquence', 'Programme', 'Vos attentes', 'Signature'],
+    // Step 1
+    'step1-title-1': "Faisons d'abord",
+    'step1-title-2': 'connaissance',
+    'step1-desc': 'Pour personnaliser votre accompagnement de bout en bout.',
+    'step1-prenom-label': 'Prénom',
+    'step1-prenom-ph': 'Votre prénom',
+    'step1-nom-label': 'Nom',
+    'step1-nom-ph': 'Votre nom',
+    // Step 2
+    'step2-title-1': 'Vos',
+    'step2-title-2': 'coordonnées',
+    'step2-desc': 'Pour pouvoir vous joindre et vous accompagner personnellement.',
+    'step2-email-label': 'Adresse e-mail',
+    'step2-email-ph': 'votre@email.com',
+    'step2-tel-label': 'Numéro de téléphone (WhatsApp)',
+    'step2-tel-ph': '06 XX XX XX XX',
+    // Step 3
+    'step3-title-1': 'Quelle place occupe',
+    'step3-title-2': 'le luxe',
+    'step3-title-3': 'dans votre manière de vous habiller ?',
+    'step3-desc': "Cela nous aide à comprendre votre rapport à l'exception.",
+    'step3-opt1-title': 'Intérêt très fort',
+    'step3-opt1-desc': 'Le luxe est central dans votre identité',
+    'step3-opt2-title': 'Intérêt modéré',
+    'step3-opt2-desc': 'Vous appréciez le luxe pour des occasions choisies',
+    'step3-opt3-title': 'Intérêt faible',
+    'step3-opt3-desc': 'Vous découvrez ou explorez ce monde',
+    // Step 4
+    'step4-title-1': 'Dans quelle tranche de',
+    'step4-title-2': 'budget',
+    'step4-title-3': 'vous situez-vous ?',
+    'step4-desc': 'Pour vos achats de luxe, en moyenne mensuelle.',
+    'step4-opt1': 'Entre 0 et 500 € par mois',
+    'step4-opt2': 'Entre 500 et 1 000 € par mois',
+    'step4-opt3': 'Entre 1 000 et 2 000 € par mois',
+    'step4-opt4': 'Plus de 2 000 € par mois',
+    // Step 5
+    'step5-title-1': 'À quelle',
+    'step5-title-2': 'fréquence',
+    'step5-title-3': 'achetez-vous ce type de pièces ?',
+    'step5-desc': "Votre rythme d'achat nous oriente sur l'accompagnement adapté.",
+    'step5-opt1-title': 'Régulièrement',
+    'step5-opt1-desc': 'Plusieurs fois par mois',
+    'step5-opt2-title': 'Environ une fois par mois',
+    'step5-opt2-desc': 'Un achat mensuel',
+    'step5-opt3-title': 'Occasionnellement',
+    'step5-opt3-desc': 'Quelques fois par an',
+    'step5-opt4-title': 'Très rarement',
+    'step5-opt4-desc': 'Pour des occasions spéciales',
+    // Step 6
+    'step6-title-1': 'Quel aspect de notre programme retient le plus votre',
+    'step6-title-2': 'attention',
+    'step6-desc': 'Pour vous offrir une expérience qui correspond à vos attentes.',
+    'step6-opt1-title': 'Les avantages exclusifs lors de vos achats',
+    'step6-opt1-desc': 'Réductions, accès anticipés, cadeaux',
+    'step6-opt2-title': "L'aspect relationnel avec les vendeurs",
+    'step6-opt2-desc': 'Conseil, attention personnalisée',
+    'step6-opt3-title': "L'opportunité de devenir cliente partenaire",
+    'step6-opt3-desc': 'Ambassadrice, visibilité, collaboration',
+    'step6-opt4-title': "L'expérience globale proposée",
+    'step6-opt4-desc': "L'ensemble du parcours Signature",
+    // Step 7
+    'step7-title-1': "Qu'attendez-vous d'une",
+    'step7-title-2': "expérience d'achat haut de gamme",
+    'step7-desc': "Partagez-nous votre vision pour qu'on puisse y répondre avec précision.",
+    'step7-attentes-label': 'Vos attentes',
+    'step7-attentes-ph': 'Authenticité garantie, conseil personnalisé, livraison soignée, exclusivité des pièces, aspect relationnel...',
+    'step7-precisions-label': 'Souhaitez-vous ajouter une précision ? (optionnel)',
+    'step7-precisions-ph': 'Tout élément que vous souhaitez nous partager...',
+    // Step 8
+    'step8-title-1': 'Votre',
+    'step8-title-2': 'signature',
+    'step8-desc': 'Apposez votre signature pour valider votre demande d\'accès Cliente Signature.',
+    'step8-hint': 'Signez avec votre doigt ou votre souris dans l\'encadré ci-dessus.',
+    'step8-clear': '↻ Effacer et recommencer',
+    // Final
+    'final-title-1': 'Merci,',
+    'final-title-2': ', pour votre confiance.',
+    'final-desc': 'Votre demande Cliente Signature a été soigneusement enregistrée.<br>Choisissez maintenant comment vous souhaitez poursuivre votre parcours.',
+    'final-ref': 'Demande référencée',
+    'path1-title-1': 'Je préfère',
+    'path1-title-2': 'échanger',
+    'path1-title-3': "avec vous d'abord",
+    'path1-desc': 'Posez vos questions, partagez vos doutes, prenons le temps de la conversation avant toute demande personnalisée.',
+    'path1-cta': 'Échanger sur WhatsApp →',
+    'path2-title-1': 'Je fais ma',
+    'path2-title-2': 'première demande',
+    'path2-title-3': 'maintenant',
+    'path2-desc': 'Composez directement votre recherche personnalisée d\'article via notre simulateur dédié, en toute simplicité.',
+    'path2-cta': 'Accéder au simulateur →',
+    'final-engage': "✦ Cela ne vous engage en rien. Faire une demande d'article est juste un moyen de fluidifier nos échanges futurs.",
+    'questions-title-1': 'Vos',
+    'questions-title-2': 'questions',
+    'questions-desc': 'Sur quoi souhaitez-vous en savoir plus ? Nous vous répondrons avec attention.',
+    'questions-ph': "Ex : Comment fonctionne le système de fidélité ? Quelles sont vos garanties d'authenticité ? Comment se déroule un premier achat ?...",
+    'questions-send': '✦ Envoyer ma demande sur WhatsApp',
+    'questions-back': '← Retour',
+    'footer-tag': "— L'élégance, autrement —",
+    // WhatsApp messages
+    'wa-discuss-hello': 'Bonjour Serenvo ✦',
+    'wa-discuss-just-finalized': 'Je viens de finaliser ma demande Cliente Signature (n°',
+    'wa-discuss-want-discuss': 'Avant toute demande personnalisée, je souhaiterais échanger avec vous sur les points suivants :',
+    'wa-discuss-fallback': "— (Pas de question précise pour le moment, j'aimerais en savoir plus sur votre univers)"
+  },
+  en: {
+    'tagline': '— Signature Client —',
+    'hero-title-1': 'Request your',
+    'hero-title-2': 'privileged access',
+    'hero-sub': 'A premium shopping experience,<br>designed for those who make exception an art of living.',
+    'hero-btn': '◆ Start my request',
+    'intro-eyebrow': '◆ Before we start',
+    'intro-title-1': 'Welcome to the',
+    'intro-title-2': 'Signature Client programme',
+    'intro-p1-1': 'You wish to apply to ',
+    'intro-p1-highlight': 'grow with Serenvo',
+    'intro-p1-2': ', access our exclusive benefits and be supported at every step of your luxury journey.',
+    'intro-p2': 'This form helps us know you better so we can offer an experience that meets your expectations: informed choices, personalized advice, and precise answers to all your questions.',
+    'intro-p3-highlight': 'After your request',
+    'intro-p3': ', you can choose to chat with us or directly submit your first personalized item search.',
+    'intro-btn': 'Compose my request',
+    'step-label': 'Step',
+    'btn-prev': '← Previous',
+    'btn-next': 'Next →',
+    'btn-finalize': 'Finalize my request →',
+    'steps-labels': ['Identity', 'Contact', 'Place of luxury', 'Budget', 'Frequency', 'Programme', 'Your expectations', 'Signature'],
+    'step1-title-1': 'Let\'s get to',
+    'step1-title-2': 'know each other',
+    'step1-desc': 'To personalize your experience from start to finish.',
+    'step1-prenom-label': 'First name',
+    'step1-prenom-ph': 'Your first name',
+    'step1-nom-label': 'Last name',
+    'step1-nom-ph': 'Your last name',
+    'step2-title-1': 'Your',
+    'step2-title-2': 'contact details',
+    'step2-desc': 'So we can reach you and support you personally.',
+    'step2-email-label': 'Email address',
+    'step2-email-ph': 'your@email.com',
+    'step2-tel-label': 'Phone number (WhatsApp)',
+    'step2-tel-ph': '+XX XXX XXX XXX',
+    'step3-title-1': 'What place does',
+    'step3-title-2': 'luxury',
+    'step3-title-3': 'occupy in the way you dress?',
+    'step3-desc': 'This helps us understand your relationship with exception.',
+    'step3-opt1-title': 'Very strong interest',
+    'step3-opt1-desc': 'Luxury is central to your identity',
+    'step3-opt2-title': 'Moderate interest',
+    'step3-opt2-desc': 'You appreciate luxury for selected occasions',
+    'step3-opt3-title': 'Mild interest',
+    'step3-opt3-desc': 'You\'re discovering or exploring this world',
+    'step4-title-1': 'In which',
+    'step4-title-2': 'budget',
+    'step4-title-3': 'range do you fit?',
+    'step4-desc': 'For your luxury purchases, monthly average.',
+    'step4-opt1': 'Between €0 and €500 per month',
+    'step4-opt2': 'Between €500 and €1,000 per month',
+    'step4-opt3': 'Between €1,000 and €2,000 per month',
+    'step4-opt4': 'More than €2,000 per month',
+    'step5-title-1': 'How',
+    'step5-title-2': 'often',
+    'step5-title-3': 'do you buy this type of pieces?',
+    'step5-desc': 'Your shopping rhythm guides us toward suitable support.',
+    'step5-opt1-title': 'Regularly',
+    'step5-opt1-desc': 'Several times a month',
+    'step5-opt2-title': 'About once a month',
+    'step5-opt2-desc': 'One monthly purchase',
+    'step5-opt3-title': 'Occasionally',
+    'step5-opt3-desc': 'A few times a year',
+    'step5-opt4-title': 'Very rarely',
+    'step5-opt4-desc': 'For special occasions',
+    'step6-title-1': 'Which aspect of our programme catches your',
+    'step6-title-2': 'attention',
+    'step6-desc': 'To offer you an experience that matches your expectations.',
+    'step6-opt1-title': 'Exclusive benefits when you shop',
+    'step6-opt1-desc': 'Discounts, early access, gifts',
+    'step6-opt2-title': 'The personal relationship with sellers',
+    'step6-opt2-desc': 'Advice, personalized attention',
+    'step6-opt3-title': 'The opportunity to become a partner client',
+    'step6-opt3-desc': 'Ambassador, visibility, collaboration',
+    'step6-opt4-title': 'The overall experience offered',
+    'step6-opt4-desc': 'The complete Signature journey',
+    'step7-title-1': 'What do you expect from a',
+    'step7-title-2': 'premium shopping experience',
+    'step7-desc': 'Share your vision so we can respond precisely.',
+    'step7-attentes-label': 'Your expectations',
+    'step7-attentes-ph': 'Guaranteed authenticity, personalized advice, careful delivery, exclusive pieces, relational aspect...',
+    'step7-precisions-label': 'Would you like to add any details? (optional)',
+    'step7-precisions-ph': 'Anything you wish to share with us...',
+    'step8-title-1': 'Your',
+    'step8-title-2': 'signature',
+    'step8-desc': 'Sign to validate your Signature Client access request.',
+    'step8-hint': 'Sign with your finger or mouse in the box above.',
+    'step8-clear': '↻ Clear and restart',
+    'final-title-1': 'Thank you,',
+    'final-title-2': ', for your trust.',
+    'final-desc': 'Your Signature Client request has been carefully recorded.<br>Now choose how you wish to continue your journey.',
+    'final-ref': 'Request reference',
+    'path1-title-1': 'I prefer to',
+    'path1-title-2': 'chat',
+    'path1-title-3': 'with you first',
+    'path1-desc': 'Ask your questions, share your doubts, let\'s take the time to talk before any personalized request.',
+    'path1-cta': 'Chat on WhatsApp →',
+    'path2-title-1': 'I make my',
+    'path2-title-2': 'first request',
+    'path2-title-3': 'now',
+    'path2-desc': 'Directly compose your personalized item search through our dedicated simulator, with simplicity.',
+    'path2-cta': 'Access the simulator →',
+    'final-engage': '✦ This commits you to nothing. Making an item request is just a way to streamline our future exchanges.',
+    'questions-title-1': 'Your',
+    'questions-title-2': 'questions',
+    'questions-desc': 'What would you like to know more about? We will answer with care.',
+    'questions-ph': 'Ex: How does the loyalty system work? What are your authenticity guarantees? How does a first purchase work?...',
+    'questions-send': '✦ Send my request on WhatsApp',
+    'questions-back': '← Back',
+    'footer-tag': '— Elegance, redefined —',
+    'wa-discuss-hello': 'Hello Serenvo ✦',
+    'wa-discuss-just-finalized': 'I just finalized my Signature Client request (no.',
+    'wa-discuss-want-discuss': 'Before any personalized request, I would like to discuss the following points with you:',
+    'wa-discuss-fallback': "— (No specific question for now, I'd like to know more about your world)"
+  },
+  es: {
+    'tagline': '— Cliente Signature —',
+    'hero-title-1': 'Solicita tu',
+    'hero-title-2': 'acceso privilegiado',
+    'hero-sub': 'Una experiencia de compra de alta gama,<br>pensada para quienes hacen de la excepción un arte de vivir.',
+    'hero-btn': '◆ Comenzar mi solicitud',
+    'intro-eyebrow': '◆ Antes de empezar',
+    'intro-title-1': 'Bienvenida al programa',
+    'intro-title-2': 'Cliente Signature',
+    'intro-p1-1': 'Deseas hacer tu solicitud para ',
+    'intro-p1-highlight': 'crecer con Serenvo',
+    'intro-p1-2': ', acceder a nuestras ventajas exclusivas y ser acompañada en cada etapa de tu recorrido de lujo.',
+    'intro-p2': 'Este formulario nos permite conocerte mejor para ofrecerte una experiencia a la altura de tus expectativas: elecciones informadas, consejos personalizados y respuestas precisas a todas tus preguntas.',
+    'intro-p3-highlight': 'Tras tu solicitud',
+    'intro-p3': ', podrás elegir intercambiar con nosotros o formular directamente tu primera búsqueda personalizada de artículo.',
+    'intro-btn': 'Componer mi solicitud',
+    'step-label': 'Paso',
+    'btn-prev': '← Anterior',
+    'btn-next': 'Siguiente →',
+    'btn-finalize': 'Finalizar mi solicitud →',
+    'steps-labels': ['Identidad', 'Contacto', 'Lugar del lujo', 'Presupuesto', 'Frecuencia', 'Programa', 'Tus expectativas', 'Firma'],
+    'step1-title-1': 'Primero,',
+    'step1-title-2': 'conozcámonos',
+    'step1-desc': 'Para personalizar tu acompañamiento de principio a fin.',
+    'step1-prenom-label': 'Nombre',
+    'step1-prenom-ph': 'Tu nombre',
+    'step1-nom-label': 'Apellido',
+    'step1-nom-ph': 'Tu apellido',
+    'step2-title-1': 'Tus',
+    'step2-title-2': 'datos de contacto',
+    'step2-desc': 'Para poder contactarte y acompañarte personalmente.',
+    'step2-email-label': 'Correo electrónico',
+    'step2-email-ph': 'tu@email.com',
+    'step2-tel-label': 'Número de teléfono (WhatsApp)',
+    'step2-tel-ph': '+XX XXX XXX XXX',
+    'step3-title-1': '¿Qué lugar ocupa',
+    'step3-title-2': 'el lujo',
+    'step3-title-3': 'en tu forma de vestir?',
+    'step3-desc': 'Esto nos ayuda a entender tu relación con la excepción.',
+    'step3-opt1-title': 'Interés muy fuerte',
+    'step3-opt1-desc': 'El lujo es central en tu identidad',
+    'step3-opt2-title': 'Interés moderado',
+    'step3-opt2-desc': 'Aprecias el lujo para ocasiones elegidas',
+    'step3-opt3-title': 'Interés ligero',
+    'step3-opt3-desc': 'Estás descubriendo o explorando este mundo',
+    'step4-title-1': '¿En qué tramo de',
+    'step4-title-2': 'presupuesto',
+    'step4-title-3': 'te ubicas?',
+    'step4-desc': 'Para tus compras de lujo, en promedio mensual.',
+    'step4-opt1': 'Entre 0 y 500 € por mes',
+    'step4-opt2': 'Entre 500 y 1.000 € por mes',
+    'step4-opt3': 'Entre 1.000 y 2.000 € por mes',
+    'step4-opt4': 'Más de 2.000 € por mes',
+    'step5-title-1': '¿Con qué',
+    'step5-title-2': 'frecuencia',
+    'step5-title-3': 'compras este tipo de piezas?',
+    'step5-desc': 'Tu ritmo de compra nos orienta sobre el acompañamiento adecuado.',
+    'step5-opt1-title': 'Regularmente',
+    'step5-opt1-desc': 'Varias veces al mes',
+    'step5-opt2-title': 'Aproximadamente una vez al mes',
+    'step5-opt2-desc': 'Una compra mensual',
+    'step5-opt3-title': 'Ocasionalmente',
+    'step5-opt3-desc': 'Algunas veces al año',
+    'step5-opt4-title': 'Muy raramente',
+    'step5-opt4-desc': 'Para ocasiones especiales',
+    'step6-title-1': '¿Qué aspecto de nuestro programa capta más tu',
+    'step6-title-2': 'atención',
+    'step6-desc': 'Para ofrecerte una experiencia que corresponda a tus expectativas.',
+    'step6-opt1-title': 'Las ventajas exclusivas en tus compras',
+    'step6-opt1-desc': 'Descuentos, accesos anticipados, regalos',
+    'step6-opt2-title': 'El aspecto relacional con los vendedores',
+    'step6-opt2-desc': 'Consejo, atención personalizada',
+    'step6-opt3-title': 'La oportunidad de ser cliente colaboradora',
+    'step6-opt3-desc': 'Embajadora, visibilidad, colaboración',
+    'step6-opt4-title': 'La experiencia global propuesta',
+    'step6-opt4-desc': 'El conjunto del recorrido Signature',
+    'step7-title-1': '¿Qué esperas de una',
+    'step7-title-2': 'experiencia de compra de alta gama',
+    'step7-desc': 'Comparte tu visión para que podamos responder con precisión.',
+    'step7-attentes-label': 'Tus expectativas',
+    'step7-attentes-ph': 'Autenticidad garantizada, consejo personalizado, entrega cuidada, exclusividad de las piezas, aspecto relacional...',
+    'step7-precisions-label': '¿Deseas añadir alguna precisión? (opcional)',
+    'step7-precisions-ph': 'Cualquier elemento que desees compartir con nosotros...',
+    'step8-title-1': 'Tu',
+    'step8-title-2': 'firma',
+    'step8-desc': 'Firma para validar tu solicitud de acceso Cliente Signature.',
+    'step8-hint': 'Firma con tu dedo o tu ratón en el recuadro de arriba.',
+    'step8-clear': '↻ Borrar y empezar de nuevo',
+    'final-title-1': 'Gracias,',
+    'final-title-2': ', por tu confianza.',
+    'final-desc': 'Tu solicitud Cliente Signature ha sido cuidadosamente registrada.<br>Ahora elige cómo deseas continuar tu recorrido.',
+    'final-ref': 'Solicitud de referencia',
+    'path1-title-1': 'Prefiero',
+    'path1-title-2': 'conversar',
+    'path1-title-3': 'contigo primero',
+    'path1-desc': 'Haz tus preguntas, comparte tus dudas, tomémonos el tiempo de conversar antes de cualquier solicitud personalizada.',
+    'path1-cta': 'Conversar en WhatsApp →',
+    'path2-title-1': 'Hago mi',
+    'path2-title-2': 'primera solicitud',
+    'path2-title-3': 'ahora',
+    'path2-desc': 'Compone directamente tu búsqueda personalizada de artículo a través de nuestro simulador dedicado, con toda simplicidad.',
+    'path2-cta': 'Acceder al simulador →',
+    'final-engage': '✦ Esto no te compromete a nada. Hacer una solicitud de artículo es solo una forma de fluidificar nuestros futuros intercambios.',
+    'questions-title-1': 'Tus',
+    'questions-title-2': 'preguntas',
+    'questions-desc': '¿Sobre qué te gustaría saber más? Te responderemos con atención.',
+    'questions-ph': 'Ej: ¿Cómo funciona el sistema de fidelidad? ¿Cuáles son sus garantías de autenticidad? ¿Cómo se desarrolla una primera compra?...',
+    'questions-send': '✦ Enviar mi solicitud por WhatsApp',
+    'questions-back': '← Volver',
+    'footer-tag': '— La elegancia, de otra manera —',
+    'wa-discuss-hello': 'Hola Serenvo ✦',
+    'wa-discuss-just-finalized': 'Acabo de finalizar mi solicitud Cliente Signature (n°',
+    'wa-discuss-want-discuss': 'Antes de cualquier solicitud personalizada, me gustaría intercambiar contigo sobre los siguientes puntos:',
+    'wa-discuss-fallback': '— (Sin pregunta precisa por ahora, me gustaría saber más sobre tu universo)'
+  },
+  de: {
+    'tagline': '— Signature Kundin —',
+    'hero-title-1': 'Beantragen Sie Ihren',
+    'hero-title-2': 'privilegierten Zugang',
+    'hero-sub': 'Ein erstklassiges Einkaufserlebnis,<br>für jene, die das Außergewöhnliche zur Lebenskunst machen.',
+    'hero-btn': '◆ Meine Anfrage starten',
+    'intro-eyebrow': '◆ Bevor wir beginnen',
+    'intro-title-1': 'Willkommen im Programm',
+    'intro-title-2': 'Signature Kundin',
+    'intro-p1-1': 'Sie möchten Ihre Anfrage stellen, um ',
+    'intro-p1-highlight': 'mit Serenvo zu wachsen',
+    'intro-p1-2': ', auf unsere exklusiven Vorteile zuzugreifen und auf jeder Etappe Ihrer Luxus-Reise begleitet zu werden.',
+    'intro-p2': 'Dieses Formular ermöglicht es uns, Sie besser kennenzulernen, um Ihnen ein Erlebnis zu bieten, das Ihren Erwartungen entspricht: fundierte Entscheidungen, persönliche Beratung und präzise Antworten auf alle Ihre Fragen.',
+    'intro-p3-highlight': 'Nach Ihrer Anfrage',
+    'intro-p3': ' können Sie wählen, ob Sie mit uns sprechen oder direkt Ihre erste personalisierte Artikelsuche formulieren möchten.',
+    'intro-btn': 'Meine Anfrage zusammenstellen',
+    'step-label': 'Schritt',
+    'btn-prev': '← Zurück',
+    'btn-next': 'Weiter →',
+    'btn-finalize': 'Meine Anfrage abschließen →',
+    'steps-labels': ['Identität', 'Kontakt', 'Stellenwert des Luxus', 'Budget', 'Häufigkeit', 'Programm', 'Ihre Erwartungen', 'Unterschrift'],
+    'step1-title-1': 'Lernen wir uns',
+    'step1-title-2': 'kennen',
+    'step1-desc': 'Um Ihre Begleitung von Anfang bis Ende zu personalisieren.',
+    'step1-prenom-label': 'Vorname',
+    'step1-prenom-ph': 'Ihr Vorname',
+    'step1-nom-label': 'Nachname',
+    'step1-nom-ph': 'Ihr Nachname',
+    'step2-title-1': 'Ihre',
+    'step2-title-2': 'Kontaktdaten',
+    'step2-desc': 'Damit wir Sie erreichen und persönlich begleiten können.',
+    'step2-email-label': 'E-Mail-Adresse',
+    'step2-email-ph': 'ihre@email.com',
+    'step2-tel-label': 'Telefonnummer (WhatsApp)',
+    'step2-tel-ph': '+XX XXX XXX XXX',
+    'step3-title-1': 'Welchen Stellenwert nimmt',
+    'step3-title-2': 'der Luxus',
+    'step3-title-3': 'in Ihrer Art sich zu kleiden ein?',
+    'step3-desc': 'Das hilft uns, Ihre Beziehung zum Außergewöhnlichen zu verstehen.',
+    'step3-opt1-title': 'Sehr starkes Interesse',
+    'step3-opt1-desc': 'Luxus ist zentral für Ihre Identität',
+    'step3-opt2-title': 'Mäßiges Interesse',
+    'step3-opt2-desc': 'Sie schätzen Luxus für ausgewählte Anlässe',
+    'step3-opt3-title': 'Geringes Interesse',
+    'step3-opt3-desc': 'Sie entdecken oder erkunden diese Welt',
+    'step4-title-1': 'In welcher',
+    'step4-title-2': 'Budget',
+    'step4-title-3': '-Spanne befinden Sie sich?',
+    'step4-desc': 'Für Ihre Luxuskäufe, im monatlichen Durchschnitt.',
+    'step4-opt1': 'Zwischen 0 und 500 € pro Monat',
+    'step4-opt2': 'Zwischen 500 und 1.000 € pro Monat',
+    'step4-opt3': 'Zwischen 1.000 und 2.000 € pro Monat',
+    'step4-opt4': 'Mehr als 2.000 € pro Monat',
+    'step5-title-1': 'Wie',
+    'step5-title-2': 'oft',
+    'step5-title-3': 'kaufen Sie solche Stücke?',
+    'step5-desc': 'Ihr Kaufrhythmus zeigt uns die passende Begleitung.',
+    'step5-opt1-title': 'Regelmäßig',
+    'step5-opt1-desc': 'Mehrmals im Monat',
+    'step5-opt2-title': 'Etwa einmal im Monat',
+    'step5-opt2-desc': 'Ein monatlicher Einkauf',
+    'step5-opt3-title': 'Gelegentlich',
+    'step5-opt3-desc': 'Einige Male im Jahr',
+    'step5-opt4-title': 'Sehr selten',
+    'step5-opt4-desc': 'Für besondere Anlässe',
+    'step6-title-1': 'Welcher Aspekt unseres Programms erregt am meisten Ihre',
+    'step6-title-2': 'Aufmerksamkeit',
+    'step6-desc': 'Um Ihnen ein Erlebnis zu bieten, das Ihren Erwartungen entspricht.',
+    'step6-opt1-title': 'Die exklusiven Vorteile bei Ihren Einkäufen',
+    'step6-opt1-desc': 'Rabatte, vorzeitiger Zugang, Geschenke',
+    'step6-opt2-title': 'Der persönliche Aspekt mit den Verkäufern',
+    'step6-opt2-desc': 'Beratung, persönliche Aufmerksamkeit',
+    'step6-opt3-title': 'Die Möglichkeit, Partnerkundin zu werden',
+    'step6-opt3-desc': 'Botschafterin, Sichtbarkeit, Zusammenarbeit',
+    'step6-opt4-title': 'Das vorgeschlagene Gesamterlebnis',
+    'step6-opt4-desc': 'Der gesamte Signature-Werdegang',
+    'step7-title-1': 'Was erwarten Sie von einem',
+    'step7-title-2': 'erstklassigen Einkaufserlebnis',
+    'step7-desc': 'Teilen Sie uns Ihre Vision mit, damit wir präzise antworten können.',
+    'step7-attentes-label': 'Ihre Erwartungen',
+    'step7-attentes-ph': 'Garantierte Authentizität, persönliche Beratung, sorgfältige Lieferung, exklusive Stücke, persönlicher Aspekt...',
+    'step7-precisions-label': 'Möchten Sie eine Präzisierung hinzufügen? (optional)',
+    'step7-precisions-ph': 'Alles, was Sie mit uns teilen möchten...',
+    'step8-title-1': 'Ihre',
+    'step8-title-2': 'Unterschrift',
+    'step8-desc': 'Unterschreiben Sie, um Ihre Signature-Kundinnen-Zugangsanfrage zu bestätigen.',
+    'step8-hint': 'Unterschreiben Sie mit Ihrem Finger oder Ihrer Maus im Feld oben.',
+    'step8-clear': '↻ Löschen und neu beginnen',
+    'final-title-1': 'Vielen Dank,',
+    'final-title-2': ', für Ihr Vertrauen.',
+    'final-desc': 'Ihre Signature-Kundinnen-Anfrage wurde sorgfältig registriert.<br>Wählen Sie nun, wie Sie Ihren Werdegang fortsetzen möchten.',
+    'final-ref': 'Anfragereferenz',
+    'path1-title-1': 'Ich ziehe es vor, mich zuerst',
+    'path1-title-2': 'auszutauschen',
+    'path1-title-3': '',
+    'path1-desc': 'Stellen Sie Ihre Fragen, teilen Sie Ihre Zweifel, nehmen wir uns Zeit für das Gespräch vor jeder personalisierten Anfrage.',
+    'path1-cta': 'Auf WhatsApp austauschen →',
+    'path2-title-1': 'Ich stelle meine',
+    'path2-title-2': 'erste Anfrage',
+    'path2-title-3': 'jetzt',
+    'path2-desc': 'Stellen Sie Ihre personalisierte Artikelsuche direkt über unseren dedizierten Simulator zusammen, ganz einfach.',
+    'path2-cta': 'Zum Simulator →',
+    'final-engage': '✦ Das verpflichtet Sie zu nichts. Eine Artikelanfrage zu stellen ist nur eine Möglichkeit, unsere zukünftigen Austausche zu erleichtern.',
+    'questions-title-1': 'Ihre',
+    'questions-title-2': 'Fragen',
+    'questions-desc': 'Worüber möchten Sie mehr erfahren? Wir werden Ihnen aufmerksam antworten.',
+    'questions-ph': 'Bsp: Wie funktioniert das Treuesystem? Welche Authentizitätsgarantien bieten Sie? Wie verläuft ein Erstkauf?...',
+    'questions-send': '✦ Meine Anfrage auf WhatsApp senden',
+    'questions-back': '← Zurück',
+    'footer-tag': '— Eleganz, neu definiert —',
+    'wa-discuss-hello': 'Hallo Serenvo ✦',
+    'wa-discuss-just-finalized': 'Ich habe gerade meine Signature-Kundinnen-Anfrage abgeschlossen (Nr.',
+    'wa-discuss-want-discuss': 'Vor jeder personalisierten Anfrage möchte ich mit Ihnen über folgende Punkte sprechen:',
+    'wa-discuss-fallback': '— (Keine genaue Frage im Moment, ich möchte mehr über Ihre Welt erfahren)'
+  }
+};
+
+// Mapping bidirectionnel pour les valeurs stockées :
+// Permet de convertir la valeur affichée (dans la langue cliente) → valeur FR (Google Sheet)
+// Et inversement (FR → langue cliente) pour réafficher le bouton sélectionné après changement de langue
+const valueMapping = {
+  placeLuxe: {
+    fr: ['Intérêt très fort', 'Intérêt modéré', 'Intérêt faible'],
+    en: ['Very strong interest', 'Moderate interest', 'Mild interest'],
+    es: ['Interés muy fuerte', 'Interés moderado', 'Interés ligero'],
+    de: ['Sehr starkes Interesse', 'Mäßiges Interesse', 'Geringes Interesse']
+  },
+  budget: {
+    fr: ['Entre 0 et 500 € par mois', 'Entre 500 et 1 000 € par mois', 'Entre 1 000 et 2 000 € par mois', 'Plus de 2 000 € par mois'],
+    en: ['Between €0 and €500 per month', 'Between €500 and €1,000 per month', 'Between €1,000 and €2,000 per month', 'More than €2,000 per month'],
+    es: ['Entre 0 y 500 € por mes', 'Entre 500 y 1.000 € por mes', 'Entre 1.000 y 2.000 € por mes', 'Más de 2.000 € por mes'],
+    de: ['Zwischen 0 und 500 € pro Monat', 'Zwischen 500 und 1.000 € pro Monat', 'Zwischen 1.000 und 2.000 € pro Monat', 'Mehr als 2.000 € pro Monat']
+  },
+  frequence: {
+    fr: ['Régulièrement', 'Environ une fois par mois', 'Occasionnellement', 'Très rarement'],
+    en: ['Regularly', 'About once a month', 'Occasionally', 'Very rarely'],
+    es: ['Regularmente', 'Aproximadamente una vez al mes', 'Ocasionalmente', 'Muy raramente'],
+    de: ['Regelmäßig', 'Etwa einmal im Monat', 'Gelegentlich', 'Sehr selten']
+  },
+  aspectProgramme: {
+    fr: ['Les avantages exclusifs lors de vos achats', "L'aspect relationnel avec les vendeurs", "L'opportunité de devenir cliente partenaire", "L'expérience globale proposée"],
+    en: ['Exclusive benefits when you shop', 'The personal relationship with sellers', 'The opportunity to become a partner client', 'The overall experience offered'],
+    es: ['Las ventajas exclusivas en tus compras', 'El aspecto relacional con los vendedores', 'La oportunidad de ser cliente colaboradora', 'La experiencia global propuesta'],
+    de: ['Die exklusiven Vorteile bei Ihren Einkäufen', 'Der persönliche Aspekt mit den Verkäufern', 'Die Möglichkeit, Partnerkundin zu werden', 'Das vorgeschlagene Gesamterlebnis']
+  }
+};
+
+// Helper : récupère une chaîne dans la langue actuelle
+function t(key) {
+  return (i18n[currentLang] && i18n[currentLang][key]) || i18n.fr[key] || key;
+}
+
+// Helper : retourne la valeur affichée dans la langue active pour une valeur stockée en FR
+function displayValue(field, frValue) {
+  const idx = valueMapping[field].fr.indexOf(frValue);
+  if (idx === -1) return frValue;
+  return valueMapping[field][currentLang][idx] || frValue;
+}
+
+// Sélection d'une option : on stocke TOUJOURS la valeur en français
+function selectOption(field, langValue) {
+  const idx = valueMapping[field][currentLang].indexOf(langValue);
+  if (idx !== -1) {
+    data[field] = valueMapping[field].fr[idx];
+  } else {
+    data[field] = langValue;
+  }
+  renderStep();
+}
+
+// Sélecteur de langue
+const langLabels = {
+  fr: { flag: '🇫🇷', code: 'FR' },
+  en: { flag: '🇬🇧', code: 'EN' },
+  es: { flag: '🇪🇸', code: 'ES' },
+  de: { flag: '🇩🇪', code: 'DE' }
+};
+
+function toggleLangDropdown() {
+  document.getElementById('langSelector').classList.toggle('open');
+}
+
+function setLanguage(lang) {
+  if (!i18n[lang]) return;
+  currentLang = lang;
+  try { localStorage.setItem('serenvoLang', lang); } catch (e) {}
+  document.getElementById('currentFlag').textContent = langLabels[lang].flag;
+  document.getElementById('currentLang').textContent = langLabels[lang].code;
+  document.querySelectorAll('.lang-option').forEach(opt => {
+    opt.classList.toggle('active', opt.dataset.lang === lang);
+  });
+  document.documentElement.lang = lang;
+  document.getElementById('langSelector').classList.remove('open');
+  applyStaticTranslations();
+  // Si on est dans le formulaire, re-render l'étape
+  if (document.getElementById('form').classList.contains('active')) {
+    renderStep();
+  }
+}
+
+document.addEventListener('click', (e) => {
+  const selector = document.getElementById('langSelector');
+  if (selector && !selector.contains(e.target)) selector.classList.remove('open');
+});
+
+// Applique les traductions aux éléments statiques (hero, intro, finale)
+function applyStaticTranslations() {
+  // Hero
+  const heroTagline = document.querySelector('.hero-tagline');
+  if (heroTagline) heroTagline.textContent = t('tagline');
+  const heroTitle = document.querySelector('.hero-title');
+  if (heroTitle) heroTitle.innerHTML = `${t('hero-title-1')} <em>${t('hero-title-2')}</em>.`;
+  const heroSub = document.querySelector('.hero-sub');
+  if (heroSub) heroSub.innerHTML = t('hero-sub');
+  const heroBtn = document.querySelector('.hero-btn span');
+  if (heroBtn) heroBtn.textContent = t('hero-btn');
+
+  // Intro
+  const introEyebrow = document.querySelector('.intro-eyebrow');
+  if (introEyebrow) introEyebrow.textContent = t('intro-eyebrow');
+  const introTitle = document.querySelector('.intro-title');
+  if (introTitle) introTitle.innerHTML = `${t('intro-title-1')} <em>${t('intro-title-2')}</em>.`;
+  const introCard = document.querySelector('.intro-card');
+  if (introCard) {
+    introCard.innerHTML = `
+      <p>${t('intro-p1-1')}<span class="highlight">${t('intro-p1-highlight')}</span>${t('intro-p1-2')}</p>
+      <p>${t('intro-p2')}</p>
+      <p><span class="highlight">${t('intro-p3-highlight')}</span>${t('intro-p3')}</p>
+    `;
+  }
+  const introBtn = document.querySelector('.intro-cta .btn-primary span');
+  if (introBtn) introBtn.textContent = t('intro-btn');
+
+  // Form labels
+  const stepLabel = document.querySelector('.step-label');
+  if (stepLabel) {
+    const stepNumEl = document.getElementById('stepNum');
+    const num = stepNumEl ? stepNumEl.textContent : '1';
+    stepLabel.innerHTML = `${t('step-label')} <span id="stepNum">${num}</span> / 8`;
+  }
+  const btnPrev = document.getElementById('btnPrev');
+  if (btnPrev) btnPrev.textContent = t('btn-prev');
+  const btnNextText = document.getElementById('btnNextText');
+  if (btnNextText) {
+    btnNextText.textContent = currentStep === totalSteps ? t('btn-finalize') : t('btn-next');
+  }
+
+  // Final screen
+  const finalDesc = document.querySelector('.final-desc');
+  if (finalDesc) finalDesc.innerHTML = t('final-desc');
+  const finalRef = document.querySelector('.demande-num-box .step-label');
+  if (finalRef) finalRef.textContent = t('final-ref');
+
+  // Path cards
+  const pathCards = document.querySelectorAll('.paths-grid .path-card');
+  if (pathCards.length === 2) {
+    pathCards[0].querySelector('.path-title').innerHTML = `${t('path1-title-1')} <em>${t('path1-title-2')}</em> ${t('path1-title-3')}`;
+    pathCards[0].querySelector('.path-desc').textContent = t('path1-desc');
+    pathCards[0].querySelector('.path-cta').textContent = t('path1-cta');
+    pathCards[1].querySelector('.path-title').innerHTML = `${t('path2-title-1')} <em>${t('path2-title-2')}</em> ${t('path2-title-3')}`;
+    pathCards[1].querySelector('.path-desc').textContent = t('path2-desc');
+    pathCards[1].querySelector('.path-cta').textContent = t('path2-cta');
+  }
+  const finalEngage = document.querySelector('#pathChoiceSection p.center');
+  if (finalEngage) finalEngage.textContent = t('final-engage');
+
+  // Questions section
+  const qsTitle = document.querySelector('#questionsSection .questions-section h3');
+  if (qsTitle) qsTitle.innerHTML = `${t('questions-title-1')} <em>${t('questions-title-2')}</em>.`;
+  const qsDesc = document.querySelector('#questionsSection .questions-section p');
+  if (qsDesc) qsDesc.textContent = t('questions-desc');
+  const qsTextarea = document.getElementById('userQuestions');
+  if (qsTextarea) qsTextarea.placeholder = t('questions-ph');
+  const qsBtn = document.querySelector('#questionsSection .btn-primary span');
+  if (qsBtn) qsBtn.textContent = t('questions-send');
+  const qsBack = document.querySelector('#questionsSection .btn-secondary');
+  if (qsBack) qsBack.textContent = t('questions-back');
+
+  // Footer
+  const footerTag = document.querySelector('.recap-footer-tag');
+  if (footerTag) footerTag.textContent = t('footer-tag');
+
+  // Final title (si déjà rendu)
+  const finalTitle = document.querySelector('.final-title');
+  const finalPrenom = document.getElementById('finalPrenom');
+  if (finalTitle && finalPrenom && finalPrenom.textContent) {
+    finalTitle.innerHTML = `${t('final-title-1')} <em id="finalPrenom">${finalPrenom.textContent}</em>${t('final-title-2')}`;
+  }
+}
+
 
 function goToScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -726,9 +1431,17 @@ function renderStep() {
     stepbar.appendChild(seg);
   }
   document.getElementById('stepNum').textContent = currentStep;
-  document.getElementById('stepName').textContent = stepsLabels[currentStep - 1];
+  const labels = i18n[currentLang]['steps-labels'] || i18n.fr['steps-labels'];
+  document.getElementById('stepName').textContent = labels[currentStep - 1];
   document.getElementById('btnPrev').classList.toggle('hidden', currentStep === 1);
-  document.getElementById('btnNextText').textContent = currentStep === totalSteps ? 'Finaliser ma demande →' : 'Suivant →';
+  document.getElementById('btnPrev').textContent = t('btn-prev');
+  document.getElementById('btnNextText').textContent = currentStep === totalSteps ? t('btn-finalize') : t('btn-next');
+
+  // Met à jour le label "Étape X / 8"
+  const stepLabel = document.querySelector('.step-label');
+  if (stepLabel) {
+    stepLabel.innerHTML = `${t('step-label')} <span id="stepNum">${currentStep}</span> / 8`;
+  }
 
   const content = document.getElementById('stepContent');
   content.innerHTML = '';
@@ -755,16 +1468,16 @@ function updateNextButton() {
 
 function renderStep1() {
   document.getElementById('stepContent').innerHTML = `
-    <h2 class="step-title">Faisons d'abord <em>connaissance</em>.</h2>
-    <p class="step-desc">Pour personnaliser votre accompagnement de bout en bout.</p>
+    <h2 class="step-title">${t('step1-title-1')} <em>${t('step1-title-2')}</em>.</h2>
+    <p class="step-desc">${t('step1-desc')}</p>
     <div class="input-row">
       <div>
-        <div class="step-label" style="margin-bottom: 8px;">Prénom</div>
-        <input type="text" class="input" placeholder="Votre prénom" value="${data.prenom}" oninput="data.prenom=this.value; updateNextButton()">
+        <div class="step-label" style="margin-bottom: 8px;">${t('step1-prenom-label')}</div>
+        <input type="text" class="input" placeholder="${t('step1-prenom-ph')}" value="${data.prenom}" oninput="data.prenom=this.value; updateNextButton()">
       </div>
       <div>
-        <div class="step-label" style="margin-bottom: 8px;">Nom</div>
-        <input type="text" class="input" placeholder="Votre nom" value="${data.nom}" oninput="data.nom=this.value; updateNextButton()">
+        <div class="step-label" style="margin-bottom: 8px;">${t('step1-nom-label')}</div>
+        <input type="text" class="input" placeholder="${t('step1-nom-ph')}" value="${data.nom}" oninput="data.nom=this.value; updateNextButton()">
       </div>
     </div>
   `;
@@ -772,36 +1485,36 @@ function renderStep1() {
 
 function renderStep2() {
   document.getElementById('stepContent').innerHTML = `
-    <h2 class="step-title">Vos <em>coordonnées</em>.</h2>
-    <p class="step-desc">Pour pouvoir vous joindre et vous accompagner personnellement.</p>
+    <h2 class="step-title">${t('step2-title-1')} <em>${t('step2-title-2')}</em>.</h2>
+    <p class="step-desc">${t('step2-desc')}</p>
     <div style="margin-bottom: 32px;">
-      <div class="step-label" style="margin-bottom: 8px;">Adresse e-mail</div>
-      <input type="email" class="input" placeholder="votre@email.com" value="${data.email}" oninput="data.email=this.value; updateNextButton()">
+      <div class="step-label" style="margin-bottom: 8px;">${t('step2-email-label')}</div>
+      <input type="email" class="input" placeholder="${t('step2-email-ph')}" value="${data.email}" oninput="data.email=this.value; updateNextButton()">
     </div>
     <div>
-      <div class="step-label" style="margin-bottom: 8px;">Numéro de téléphone (WhatsApp)</div>
-      <input type="tel" class="input" placeholder="06 XX XX XX XX" value="${data.telephone}" oninput="data.telephone=this.value; updateNextButton()">
+      <div class="step-label" style="margin-bottom: 8px;">${t('step2-tel-label')}</div>
+      <input type="tel" class="input" placeholder="${t('step2-tel-ph')}" value="${data.telephone}" oninput="data.telephone=this.value; updateNextButton()">
     </div>
   `;
 }
 
 function renderStep3() {
-  const opts = [
-    { val: 'Intérêt très fort', desc: 'Le luxe est central dans votre identité' },
-    { val: 'Intérêt modéré', desc: 'Vous appréciez le luxe pour des occasions choisies' },
-    { val: 'Intérêt faible', desc: 'Vous découvrez ou explorez ce monde' }
-  ];
+  // Les options sont affichées dans la langue active mais data.placeLuxe stocke toujours en FR
+  const titles = [t('step3-opt1-title'), t('step3-opt2-title'), t('step3-opt3-title')];
+  const descs = [t('step3-opt1-desc'), t('step3-opt2-desc'), t('step3-opt3-desc')];
   let html = `
-    <h2 class="step-title">Quelle place occupe <em>le luxe</em> dans votre manière de vous habiller ?</h2>
-    <p class="step-desc">Cela nous aide à comprendre votre rapport à l'exception.</p>
+    <h2 class="step-title">${t('step3-title-1')} <em>${t('step3-title-2')}</em> ${t('step3-title-3')}</h2>
+    <p class="step-desc">${t('step3-desc')}</p>
     <div class="cards-grid">
   `;
-  opts.forEach(o => {
-    html += `<div class="card ${data.placeLuxe === o.val ? 'selected' : ''}" onclick="data.placeLuxe='${o.val}'; renderStep()">
+  titles.forEach((title, i) => {
+    const frValue = valueMapping.placeLuxe.fr[i];
+    const isSelected = data.placeLuxe === frValue;
+    html += `<div class="card ${isSelected ? 'selected' : ''}" onclick="selectOption('placeLuxe', '${title.replace(/'/g, "\\'")}')">
       <div class="card-radio"></div>
       <div class="card-content">
-        <div class="card-title">${o.val}</div>
-        <div class="card-desc">${o.desc}</div>
+        <div class="card-title">${title}</div>
+        <div class="card-desc">${descs[i]}</div>
       </div>
     </div>`;
   });
@@ -810,19 +1523,16 @@ function renderStep3() {
 }
 
 function renderStep4() {
-  const opts = [
-    'Entre 0 et 500 € par mois',
-    'Entre 500 et 1 000 € par mois',
-    'Entre 1 000 et 2 000 € par mois',
-    'Plus de 2 000 € par mois'
-  ];
+  const opts = [t('step4-opt1'), t('step4-opt2'), t('step4-opt3'), t('step4-opt4')];
   let html = `
-    <h2 class="step-title">Dans quelle tranche de <em>budget</em> vous situez-vous ?</h2>
-    <p class="step-desc">Pour vos achats de luxe, en moyenne mensuelle.</p>
+    <h2 class="step-title">${t('step4-title-1')} <em>${t('step4-title-2')}</em> ${t('step4-title-3')}</h2>
+    <p class="step-desc">${t('step4-desc')}</p>
     <div class="cards-grid">
   `;
-  opts.forEach(o => {
-    html += `<div class="card ${data.budget === o ? 'selected' : ''}" onclick="data.budget=this.dataset.val; renderStep()" data-val="${o}">
+  opts.forEach((o, i) => {
+    const frValue = valueMapping.budget.fr[i];
+    const isSelected = data.budget === frValue;
+    html += `<div class="card ${isSelected ? 'selected' : ''}" onclick="selectOption('budget', '${o.replace(/'/g, "\\'")}')">
       <div class="card-radio"></div>
       <div class="card-content">
         <div class="card-title">${o}</div>
@@ -834,23 +1544,21 @@ function renderStep4() {
 }
 
 function renderStep5() {
-  const opts = [
-    { val: 'Régulièrement', desc: 'Plusieurs fois par mois' },
-    { val: 'Environ une fois par mois', desc: 'Un achat mensuel' },
-    { val: 'Occasionnellement', desc: 'Quelques fois par an' },
-    { val: 'Très rarement', desc: 'Pour des occasions spéciales' }
-  ];
+  const titles = [t('step5-opt1-title'), t('step5-opt2-title'), t('step5-opt3-title'), t('step5-opt4-title')];
+  const descs = [t('step5-opt1-desc'), t('step5-opt2-desc'), t('step5-opt3-desc'), t('step5-opt4-desc')];
   let html = `
-    <h2 class="step-title">À quelle <em>fréquence</em> achetez-vous ce type de pièces ?</h2>
-    <p class="step-desc">Votre rythme d'achat nous oriente sur l'accompagnement adapté.</p>
+    <h2 class="step-title">${t('step5-title-1')} <em>${t('step5-title-2')}</em> ${t('step5-title-3')}</h2>
+    <p class="step-desc">${t('step5-desc')}</p>
     <div class="cards-grid">
   `;
-  opts.forEach(o => {
-    html += `<div class="card ${data.frequence === o.val ? 'selected' : ''}" onclick="data.frequence='${o.val}'; renderStep()">
+  titles.forEach((title, i) => {
+    const frValue = valueMapping.frequence.fr[i];
+    const isSelected = data.frequence === frValue;
+    html += `<div class="card ${isSelected ? 'selected' : ''}" onclick="selectOption('frequence', '${title.replace(/'/g, "\\'")}')">
       <div class="card-radio"></div>
       <div class="card-content">
-        <div class="card-title">${o.val}</div>
-        <div class="card-desc">${o.desc}</div>
+        <div class="card-title">${title}</div>
+        <div class="card-desc">${descs[i]}</div>
       </div>
     </div>`;
   });
@@ -859,23 +1567,21 @@ function renderStep5() {
 }
 
 function renderStep6() {
-  const opts = [
-    { val: 'Les avantages exclusifs lors de vos achats', desc: 'Réductions, accès anticipés, cadeaux' },
-    { val: "L'aspect relationnel avec les vendeurs", desc: 'Conseil, attention personnalisée' },
-    { val: "L'opportunité de devenir cliente partenaire", desc: 'Ambassadrice, visibilité, collaboration' },
-    { val: "L'expérience globale proposée", desc: "L'ensemble du parcours Signature" }
-  ];
+  const titles = [t('step6-opt1-title'), t('step6-opt2-title'), t('step6-opt3-title'), t('step6-opt4-title')];
+  const descs = [t('step6-opt1-desc'), t('step6-opt2-desc'), t('step6-opt3-desc'), t('step6-opt4-desc')];
   let html = `
-    <h2 class="step-title">Quel aspect de notre programme retient le plus votre <em>attention</em> ?</h2>
-    <p class="step-desc">Pour vous offrir une expérience qui correspond à vos attentes.</p>
+    <h2 class="step-title">${t('step6-title-1')} <em>${t('step6-title-2')}</em> ?</h2>
+    <p class="step-desc">${t('step6-desc')}</p>
     <div class="cards-grid">
   `;
-  opts.forEach((o, i) => {
-    html += `<div class="card ${data.aspectProgramme === o.val ? 'selected' : ''}" onclick="setAspect(${i})" data-idx="${i}">
+  titles.forEach((title, i) => {
+    const frValue = valueMapping.aspectProgramme.fr[i];
+    const isSelected = data.aspectProgramme === frValue;
+    html += `<div class="card ${isSelected ? 'selected' : ''}" onclick="setAspect(${i})" data-idx="${i}">
       <div class="card-radio"></div>
       <div class="card-content">
-        <div class="card-title">${o.val}</div>
-        <div class="card-desc">${o.desc}</div>
+        <div class="card-title">${title}</div>
+        <div class="card-desc">${descs[i]}</div>
       </div>
     </div>`;
   });
@@ -884,41 +1590,36 @@ function renderStep6() {
 }
 
 function setAspect(i) {
-  const opts = [
-    'Les avantages exclusifs lors de vos achats',
-    "L'aspect relationnel avec les vendeurs",
-    "L'opportunité de devenir cliente partenaire",
-    "L'expérience globale proposée"
-  ];
-  data.aspectProgramme = opts[i];
+  // Stocke TOUJOURS la valeur en français pour le Google Sheet
+  data.aspectProgramme = valueMapping.aspectProgramme.fr[i];
   renderStep();
 }
 
 function renderStep7() {
   document.getElementById('stepContent').innerHTML = `
-    <h2 class="step-title">Qu'attendez-vous d'une <em>expérience d'achat haut de gamme</em> ?</h2>
-    <p class="step-desc">Partagez-nous votre vision pour qu'on puisse y répondre avec précision.</p>
+    <h2 class="step-title">${t('step7-title-1')} <em>${t('step7-title-2')}</em> ?</h2>
+    <p class="step-desc">${t('step7-desc')}</p>
     <div style="margin-bottom: 32px;">
-      <div class="step-label" style="margin-bottom: 12px;">Vos attentes</div>
-      <textarea class="textarea" placeholder="Authenticité garantie, conseil personnalisé, livraison soignée, exclusivité des pièces, aspect relationnel..." oninput="data.attentes=this.value; updateNextButton()">${data.attentes}</textarea>
+      <div class="step-label" style="margin-bottom: 12px;">${t('step7-attentes-label')}</div>
+      <textarea class="textarea" placeholder="${t('step7-attentes-ph')}" oninput="data.attentes=this.value; updateNextButton()">${data.attentes}</textarea>
     </div>
     <div>
-      <div class="step-label" style="margin-bottom: 12px;">Souhaitez-vous ajouter une précision ? (optionnel)</div>
-      <textarea class="textarea" placeholder="Tout élément que vous souhaitez nous partager..." oninput="data.precisions=this.value">${data.precisions}</textarea>
+      <div class="step-label" style="margin-bottom: 12px;">${t('step7-precisions-label')}</div>
+      <textarea class="textarea" placeholder="${t('step7-precisions-ph')}" oninput="data.precisions=this.value">${data.precisions}</textarea>
     </div>
   `;
 }
 
 function renderStep8() {
   document.getElementById('stepContent').innerHTML = `
-    <h2 class="step-title">Votre <em>signature</em>.</h2>
-    <p class="step-desc">Apposez votre signature pour valider votre demande d'accès Cliente Signature.</p>
+    <h2 class="step-title">${t('step8-title-1')} <em>${t('step8-title-2')}</em>.</h2>
+    <p class="step-desc">${t('step8-desc')}</p>
     <div class="signature-wrap">
       <canvas id="signatureCanvas"></canvas>
     </div>
-    <p class="signature-hint">Signez avec votre doigt ou votre souris dans l'encadré ci-dessus.</p>
+    <p class="signature-hint">${t('step8-hint')}</p>
     <div class="signature-actions">
-      <button class="btn-secondary" onclick="clearSignature()">↻ Effacer et recommencer</button>
+      <button class="btn-secondary" onclick="clearSignature()">${t('step8-clear')}</button>
     </div>
   `;
   setTimeout(() => initSignatureCanvas(), 50);
@@ -1040,10 +1741,19 @@ function goToFinal() {
   document.getElementById('finalNumero').textContent = demandeNumero;
   document.getElementById('finalName').textContent = `${data.prenom} ${data.nom}`;
 
+  // Met à jour le titre final dans la langue active
+  const finalTitle = document.querySelector('.final-title');
+  if (finalTitle) {
+    finalTitle.innerHTML = `${t('final-title-1')} <em id="finalPrenom">${data.prenom}</em>${t('final-title-2')}`;
+  }
+
   document.getElementById('pathChoiceSection').classList.remove('hidden');
   document.getElementById('questionsSection').classList.add('hidden');
 
   goToScreen('finale');
+
+  // Met à jour les textes traduits de l'écran final
+  applyStaticTranslations();
 
   // Envoi automatique vers Google Sheet dès l'arrivée sur l'écran final
   // Peu importe le chemin choisi ensuite par la cliente
@@ -1054,6 +1764,7 @@ function selectPath(path) {
   if (path === 'discuss') {
     document.getElementById('pathChoiceSection').classList.add('hidden');
     document.getElementById('questionsSection').classList.remove('hidden');
+    applyStaticTranslations();
     setTimeout(() => document.getElementById('userQuestions').focus(), 200);
   } else if (path === 'request') {
     sendInscriptionAndRedirect();
@@ -1068,10 +1779,11 @@ function backToPaths() {
 function sendDiscussWhatsApp() {
   const userQuestions = document.getElementById('userQuestions').value.trim();
 
-  let msg = `Bonjour Serenvo ✦\n\n`;
-  msg += `Je viens de finaliser ma demande Cliente Signature (n° *${demandeNumero}*).\n\n`;
-  msg += `Avant toute demande personnalisée, je souhaiterais échanger avec vous sur les points suivants :\n\n`;
-  msg += userQuestions || "— (Pas de question précise pour le moment, j'aimerais en savoir plus sur votre univers)";
+  // Le message WhatsApp est dans la langue de la cliente (pour qu'elle comprenne)
+  let msg = `${t('wa-discuss-hello')}\n\n`;
+  msg += `${t('wa-discuss-just-finalized')} *${demandeNumero}*).\n\n`;
+  msg += `${t('wa-discuss-want-discuss')}\n\n`;
+  msg += userQuestions || t('wa-discuss-fallback');
   msg += `\n\n— ${data.prenom} ${data.nom}`;
 
   const url = `https://wa.me/33615337355?text=${encodeURIComponent(msg)}`;
@@ -1095,6 +1807,7 @@ function sendInscriptionAndRedirect() {
       attentes: data.attentes,
       precisions: data.precisions,
       signature: data.signature,
+      lang: currentLang, // Pour que le simulateur reprenne la même langue
       dateInscription: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
     };
     sessionStorage.setItem('serenvoInscription', JSON.stringify(inscriptionData));
@@ -1104,12 +1817,25 @@ function sendInscriptionAndRedirect() {
 
   // Redirection directe vers le simulateur, SANS ouvrir WhatsApp
   // (le message complet sera envoyé à la fin du simulateur avec inscription + demande)
-  const params = new URLSearchParams({ prenom: data.prenom, nom: data.nom });
+  const params = new URLSearchParams({ prenom: data.prenom, nom: data.nom, lang: currentLang });
   window.location.href = `/demande?${params.toString()}`;
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  console.log('✓ Formulaire Serenvo Cliente Signature chargé');
+  // Récupère la langue sauvegardée (depuis la page d'accueil par exemple)
+  let savedLang = 'fr';
+  try {
+    const saved = localStorage.getItem('serenvoLang');
+    if (saved && i18n[saved]) savedLang = saved;
+  } catch (e) {}
+  // Vérifie aussi si l'URL spécifie une langue (?lang=en)
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlLang = urlParams.get('lang');
+    if (urlLang && i18n[urlLang]) savedLang = urlLang;
+  } catch (e) {}
+  setLanguage(savedLang);
+  console.log('✓ Formulaire Serenvo Cliente Signature chargé (langue : ' + currentLang + ')');
 });
 </script>
 

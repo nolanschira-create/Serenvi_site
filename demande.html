@@ -7,6 +7,40 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
+  /* ============ SÉLECTEUR DE LANGUE ============ */
+  .lang-selector { position: fixed; top: 20px; right: 20px; z-index: 999; }
+  .lang-current {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 14px;
+    background: rgba(10, 9, 8, 0.85); backdrop-filter: blur(10px);
+    border: 1px solid rgba(201, 169, 97, 0.3);
+    color: #e4c989; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.3s; font-weight: 500;
+    font-family: 'Inter', sans-serif;
+  }
+  .lang-current:hover { border-color: #c9a961; background: rgba(201, 169, 97, 0.1); }
+  .lang-current::after { content: '▾'; margin-left: 4px; font-size: 10px; transition: transform 0.3s; }
+  .lang-selector.open .lang-current::after { transform: rotate(180deg); }
+  .lang-dropdown {
+    position: absolute; top: calc(100% + 6px); right: 0;
+    background: rgba(10, 9, 8, 0.95); backdrop-filter: blur(10px);
+    border: 1px solid rgba(201, 169, 97, 0.3);
+    min-width: 150px;
+    opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.3s;
+  }
+  .lang-selector.open .lang-dropdown { opacity: 1; visibility: visible; transform: translateY(0); }
+  .lang-option {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 14px;
+    color: #d8cfc1; font-size: 12px; cursor: pointer; transition: all 0.2s;
+    border-bottom: 1px solid rgba(201, 169, 97, 0.1);
+    font-family: 'Inter', sans-serif;
+  }
+  .lang-option:last-child { border-bottom: none; }
+  .lang-option:hover { background: rgba(201, 169, 97, 0.1); color: #e4c989; }
+  .lang-option.active { color: #e4c989; background: rgba(201, 169, 97, 0.06); }
+  .lang-flag { font-size: 15px; }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     background: #0a0908;
@@ -594,6 +628,21 @@
 </head>
 <body>
 
+<!-- SÉLECTEUR DE LANGUE -->
+<div class="lang-selector" id="langSelector">
+  <div class="lang-current" onclick="toggleLangDropdown()">
+    <span class="lang-flag" id="currentFlag">🇫🇷</span>
+    <span id="currentLang">FR</span>
+  </div>
+  <div class="lang-dropdown">
+    <div class="lang-option active" data-lang="fr" onclick="setLanguage('fr')"><span class="lang-flag">🇫🇷</span><span>Français</span></div>
+    <div class="lang-option" data-lang="en" onclick="setLanguage('en')"><span class="lang-flag">🇬🇧</span><span>English</span></div>
+    <div class="lang-option" data-lang="es" onclick="setLanguage('es')"><span class="lang-flag">🇪🇸</span><span>Español</span></div>
+    <div class="lang-option" data-lang="de" onclick="setLanguage('de')"><span class="lang-flag">🇩🇪</span><span>Deutsch</span></div>
+  </div>
+</div>
+
+
 <!-- ============================================================
      HERO / ANIMATION D'ACCUEIL
 ============================================================ -->
@@ -799,6 +848,655 @@ const marques = [
   { nom: 'Yves Saint Laurent', statut: 'mixte' }
 ];
 
+// ============================================================
+// SYSTÈME MULTILINGUE (i18n)
+// ============================================================
+// IMPORTANT : data.* stocke TOUJOURS les valeurs en FRANÇAIS pour le Google Sheet
+// Les traductions sont uniquement pour l'affichage à la cliente
+// Le message WhatsApp est dans la langue de la cliente
+
+let currentLang = 'fr';
+
+const i18nSim = {
+  fr: {
+    // Hero & Intro
+    'hero-tagline': 'Maison de Demande Privilégiée',
+    'hero-sub': 'Bienvenue dans votre espace privilégié.<br>Composez la demande qui vous ressemble.',
+    'hero-btn': '◆ Commencer mon parcours',
+    'intro-eyebrow': '◆ Votre parcours en 12 étapes',
+    'intro-title-1': 'Avant de commencer,',
+    'intro-title-2': 'quelques instants ensemble.',
+    'intro-desc': "Ce simulateur va vous guider à travers une sélection de critères, afin que nous puissions vous proposer la pièce qui correspond exactement à vos désirs — qu'elle soit en boutique ou exclusivement dénichée pour vous.",
+    'intro-btn': 'Composer ma demande',
+    // Form general
+    'step-label': 'Étape',
+    'btn-prev': '← Précédent',
+    'btn-next': 'Suivant →',
+    'btn-finalize': 'Finaliser ma demande →',
+    'steps-labels': ['Identité', 'Type de produit', 'Occasion', 'Design', 'Marques', 'Couleurs', 'Référence', 'Prix', 'Délai', 'Livraison', 'Paiement', 'Finitions'],
+    // Step 1
+    'step1-title': "Faisons d'abord <em>connaissance</em>.",
+    'step1-desc': 'Pour personnaliser votre demande de bout en bout.',
+    'step1-prenom-label': 'Prénom',
+    'step1-prenom-ph': 'Votre prénom',
+    'step1-nom-label': 'Nom',
+    'step1-nom-ph': 'Votre nom',
+    // Step 2
+    'step2-title': 'Que <em>recherchez-vous</em> ?',
+    'step2-desc': 'Sélectionnez la catégorie qui vous intéresse.',
+    'step2-options': ['Bandoulière', 'Sac à main', 'Cabas', 'Sac seau', 'Portefeuille'],
+    // Step 3
+    'step3-title': 'Pour quelle <em>occasion</em> ?',
+    'step3-desc': 'Cela nous aide à orienter notre sélection.',
+    'step3-options': ['Quotidien', 'Travail', 'Événement spécial', 'Voyage', 'Cadeau'],
+    // Step 4
+    'step4-title': 'Votre style <em>esthétique</em> ?',
+    'step4-desc': 'Quelle direction visuelle vous parle le plus ?',
+    'step4-options': ['Classique intemporel', 'Moderne minimaliste', 'Iconique reconnaissable', 'Éditorial audacieux', 'Autre'],
+    'step4-other-ph': 'Précisez votre style...',
+    // Step 5
+    'step5-title': 'Vos <em>maisons préférées</em>.',
+    'step5-desc': 'Sélectionnez une ou plusieurs marques. Les maisons marquées <em style="color:#c9a961">"EXCLUSIF"</em> sont uniquement disponibles sur demande personnalisée.',
+    'step5-exclusif-label': 'EXCLUSIF',
+    // Step 6
+    'step6-title': 'Vos <em>couleurs</em>.',
+    'step6-desc': 'Quelle palette vous correspond ?',
+    'step6-options': ['Tons neutres (noir, beige, blanc)', 'Tons chauds (rouge, ocre, marron)', 'Tons froids (bleu, vert, gris)', 'Couleur précise', 'Surprenez-moi'],
+    'step6-precise-ph': 'Ex : Bordeaux, vert sapin, terracotta...',
+    // Step 7
+    'step7-title': 'Avez-vous une <em>référence en tête</em> ?',
+    'step7-desc': "Une image vaut mille mots — partagez-nous votre inspiration si vous en avez une.",
+    'step7-options': ["Oui, j'ai un lien (Pinterest, Instagram, etc.)", "Oui, je vais envoyer une photo sur WhatsApp", 'Non, je vous fais confiance'],
+    'step7-link-ph': 'Collez votre lien (Pinterest, Instagram, site officiel...)',
+    'step7-photo-label': 'Joindre une photo (optionnel)',
+    'step7-photo-hint': 'Cliquez pour ajouter une image',
+    'step7-photo-change': "Changer d'image",
+    // Step 8
+    'step8-title': 'Votre <em>budget</em>.',
+    'step8-desc': 'Indiquez la fourchette qui vous correspond.',
+    'step8-options': ['Jusqu\'à 1 500 €', 'Entre 1 500 et 3 000 €', 'Entre 3 000 et 5 000 €', 'Plus de 5 000 €', 'À déterminer ensemble'],
+    'step8-precise-label': 'Précisez si besoin',
+    'step8-precise-ph': "Ex : jusqu'à 3 500 €, jusqu'à 5 000 €...",
+    // Step 9
+    'step9-title': 'Votre <em>délai</em> ?',
+    'step9-desc': "Pour les pièces exclusives, le délai d'approvisionnement varie. Indiquez votre préférence.",
+    'step9-options': ['Pas pressée, dans les semaines à venir', 'Idéalement dans 2-3 semaines', "C'est urgent (sous 1 semaine)", 'Pour une date précise'],
+    'step9-date-label': 'Date souhaitée',
+    // Step 10
+    'step10-title': 'Votre <em>livraison</em>.',
+    'step10-desc': "Standard ou express, c'est vous qui décidez.",
+    'step10-options': ['Standard (3-7 jours ouvrés) — Offerte', 'Express (2-4 jours ouvrés) — +25 €'],
+    // Step 11
+    'step11-title': 'Votre <em>paiement</em>.',
+    'step11-info-default': 'Le paiement s\'effectuera directement sur le site Serenvo, en toute sécurité.',
+    'step11-info-exclusif': '⚠ Pour cette demande qui contient uniquement des pièces exclusives, le paiement s\'effectuera de manière externe et sécurisée. Nous vous accompagnons à chaque étape.',
+    'step11-options': ['Carte bancaire (Visa, Mastercard, Amex)', 'Apple Pay', 'PayPal', 'Revolut Pay', 'À discuter ensemble'],
+    // Step 12
+    'step12-title': 'Quelques <em>dernières finitions</em>.',
+    'step12-desc': 'Pour parfaire votre expérience.',
+    'step12-visibility-label': 'Souhaitez-vous être mise en avant dans notre communauté ? (optionnel)',
+    'step12-visibility-options': ['Témoignage écrit', 'Photo avec la pièce', 'Vidéo de présentation', 'Aucune mise en avant'],
+    'step12-source-label': 'Comment avez-vous connu Serenvo ?',
+    'step12-source-options': ['Instagram', 'TikTok', 'Bouche-à-oreille', 'Recherche Google', 'Site Serenvo', 'Autre'],
+    'step12-source-other-ph': 'Précisez...',
+    'step12-message-label': 'Un message personnel ? (optionnel)',
+    'step12-message-ph': 'Une référence précise vue ailleurs, un détail important, une attente particulière...',
+    // Final
+    'final-title-1': 'Votre demande,',
+    'final-title-2': 'consignée avec soin',
+    'final-subtitle': "Voici le récapitulatif de votre recherche personnalisée. Vous pouvez maintenant l'envoyer sur WhatsApp pour finaliser avec notre équipe.",
+    'final-ref': 'Demande référencée',
+    'recap-title': 'Récapitulatif de votre demande',
+    'recap-product': 'Produit',
+    'recap-occasion': 'Occasion',
+    'recap-design': 'Style',
+    'recap-marques': 'Maisons souhaitées',
+    'recap-couleur': 'Couleurs',
+    'recap-reference': 'Référence visuelle',
+    'recap-prix': 'Budget',
+    'recap-delai': 'Délai',
+    'recap-livraison': 'Livraison',
+    'recap-paiement': 'Paiement',
+    'recap-visibilite': 'Visibilité',
+    'recap-source': 'Source',
+    'recap-message': 'Message personnel',
+    'send-info': '✦ Votre demande va être envoyée sur notre WhatsApp dédié. Notre équipe la traitera dans les plus brefs délais.',
+    'send-btn-whatsapp': '✦ Envoyer sur WhatsApp',
+    'send-btn-pdf': '↓ Télécharger ma fiche en souvenir',
+    'footer-tag': "— L'élégance, autrement —",
+    // WhatsApp messages
+    'wa-header': '✦ DEMANDE COMPLÈTE SERENVO ✦',
+    'wa-inscription': '🌟 *INSCRIPTION CLIENTE SIGNATURE*',
+    'wa-reference': 'Référence :',
+    'wa-place-luxe': '✨ Place du luxe :',
+    'wa-budget-mensuel': '💰 Budget mensuel :',
+    'wa-frequence': '📅 Fréquence :',
+    'wa-aspect': '🎯 Aspect privilégié :',
+    'wa-attentes': '💎 *Attentes* :',
+    'wa-precisions': '📝 *Précisions* :',
+    'wa-signature': '✓ Signature électronique apposée le',
+    'wa-demande': '🛍️ *DEMANDE D\'ARTICLE —',
+    'wa-cliente': '👤 *CLIENTE*',
+    'wa-produit': '🛍️ *PRODUIT*',
+    'wa-style': 'Style :',
+    'wa-maisons': '✨ *MAISONS SOUHAITÉES*',
+    'wa-surprise': 'Surprenez-moi',
+    'wa-couleurs': '🎨 *COULEURS*',
+    'wa-reference-vis': '📸 *RÉFÉRENCE VISUELLE*',
+    'wa-lien': 'Lien :',
+    'wa-photo-note': '(Photo à envoyer séparément sur WhatsApp)',
+    'wa-budget': '💰 *BUDGET*',
+    'wa-delai-souhaite': '⏱️ *DÉLAI SOUHAITÉ*',
+    'wa-livraison': '🚚 *LIVRAISON*',
+    'wa-paiement': '💳 *PAIEMENT*',
+    'wa-paiement-revolut': '(paiement externe sécurisé, plusieurs fois possible)',
+    'wa-paiement-paypal': '(paiement externe sécurisé)',
+    'wa-visibilite': '📱 *VISIBILITÉ COMMUNAUTÉ*',
+    'wa-source': '🔗 *SOURCE*',
+    'wa-message-perso': '💬 *MESSAGE PERSONNEL*',
+    'wa-footer-combined': 'Inscription Cliente Signature + Demande d\'article',
+    'wa-footer-simple': 'Préparée via le simulateur Serenvo',
+    'wa-the': 'Le'
+  },
+  en: {
+    'hero-tagline': 'House of Privileged Requests',
+    'hero-sub': 'Welcome to your privileged space.<br>Compose the request that defines you.',
+    'hero-btn': '◆ Begin my journey',
+    'intro-eyebrow': '◆ Your journey in 12 steps',
+    'intro-title-1': 'Before we begin,',
+    'intro-title-2': 'a few moments together.',
+    'intro-desc': 'This simulator will guide you through a selection of criteria, so we can offer you the piece that exactly matches your desires — whether in store or exclusively sourced for you.',
+    'intro-btn': 'Compose my request',
+    'step-label': 'Step',
+    'btn-prev': '← Previous',
+    'btn-next': 'Next →',
+    'btn-finalize': 'Finalize my request →',
+    'steps-labels': ['Identity', 'Product type', 'Occasion', 'Design', 'Brands', 'Colours', 'Reference', 'Price', 'Timeline', 'Delivery', 'Payment', 'Finishing'],
+    'step1-title': "Let's get to <em>know each other</em>.",
+    'step1-desc': 'To personalize your request from start to finish.',
+    'step1-prenom-label': 'First name',
+    'step1-prenom-ph': 'Your first name',
+    'step1-nom-label': 'Last name',
+    'step1-nom-ph': 'Your last name',
+    'step2-title': 'What are you <em>looking for</em>?',
+    'step2-desc': 'Select the category you are interested in.',
+    'step2-options': ['Crossbody', 'Handbag', 'Tote', 'Bucket bag', 'Wallet'],
+    'step3-title': 'For which <em>occasion</em>?',
+    'step3-desc': 'This helps us guide our selection.',
+    'step3-options': ['Daily', 'Work', 'Special event', 'Travel', 'Gift'],
+    'step4-title': 'Your <em>aesthetic</em> style?',
+    'step4-desc': 'Which visual direction speaks to you most?',
+    'step4-options': ['Timeless classic', 'Modern minimalist', 'Iconic recognizable', 'Bold editorial', 'Other'],
+    'step4-other-ph': 'Specify your style...',
+    'step5-title': 'Your <em>preferred houses</em>.',
+    'step5-desc': 'Select one or more brands. Houses marked <em style="color:#c9a961">"EXCLUSIVE"</em> are only available by personalized request.',
+    'step5-exclusif-label': 'EXCLUSIVE',
+    'step6-title': 'Your <em>colours</em>.',
+    'step6-desc': 'Which palette suits you?',
+    'step6-options': ['Neutral tones (black, beige, white)', 'Warm tones (red, ochre, brown)', 'Cool tones (blue, green, grey)', 'Specific colour', 'Surprise me'],
+    'step6-precise-ph': 'Ex: Burgundy, forest green, terracotta...',
+    'step7-title': 'Do you have a <em>reference in mind</em>?',
+    'step7-desc': 'A picture is worth a thousand words — share your inspiration if you have one.',
+    'step7-options': ['Yes, I have a link (Pinterest, Instagram, etc.)', 'Yes, I will send a photo on WhatsApp', 'No, I trust you'],
+    'step7-link-ph': 'Paste your link (Pinterest, Instagram, official site...)',
+    'step7-photo-label': 'Attach a photo (optional)',
+    'step7-photo-hint': 'Click to add an image',
+    'step7-photo-change': 'Change image',
+    'step8-title': 'Your <em>budget</em>.',
+    'step8-desc': 'Indicate the range that suits you.',
+    'step8-options': ['Up to €1,500', 'Between €1,500 and €3,000', 'Between €3,000 and €5,000', 'More than €5,000', 'To be determined together'],
+    'step8-precise-label': 'Specify if needed',
+    'step8-precise-ph': 'Ex: up to €3,500, up to €5,000...',
+    'step9-title': 'Your <em>timeline</em>?',
+    'step9-desc': 'For exclusive pieces, sourcing time varies. Indicate your preference.',
+    'step9-options': ['No rush, in the coming weeks', 'Ideally in 2-3 weeks', "It's urgent (within 1 week)", 'For a specific date'],
+    'step9-date-label': 'Desired date',
+    'step10-title': 'Your <em>delivery</em>.',
+    'step10-desc': "Standard or express, it's your choice.",
+    'step10-options': ['Standard (3-7 working days) — Free', 'Express (2-4 working days) — +€25'],
+    'step11-title': 'Your <em>payment</em>.',
+    'step11-info-default': 'Payment will be made directly on the Serenvo site, securely.',
+    'step11-info-exclusif': '⚠ For this request containing only exclusive pieces, payment will be made externally and securely. We support you at every step.',
+    'step11-options': ['Credit card (Visa, Mastercard, Amex)', 'Apple Pay', 'PayPal', 'Revolut Pay', 'To discuss together'],
+    'step12-title': 'A few <em>finishing touches</em>.',
+    'step12-desc': 'To perfect your experience.',
+    'step12-visibility-label': 'Would you like to be featured in our community? (optional)',
+    'step12-visibility-options': ['Written testimonial', 'Photo with the piece', 'Presentation video', 'No feature'],
+    'step12-source-label': 'How did you hear about Serenvo?',
+    'step12-source-options': ['Instagram', 'TikTok', 'Word of mouth', 'Google search', 'Serenvo website', 'Other'],
+    'step12-source-other-ph': 'Specify...',
+    'step12-message-label': 'A personal message? (optional)',
+    'step12-message-ph': 'A specific reference seen elsewhere, an important detail, a particular expectation...',
+    'final-title-1': 'Your request,',
+    'final-title-2': 'carefully recorded',
+    'final-subtitle': 'Here is the summary of your personalized search. You can now send it on WhatsApp to finalize with our team.',
+    'final-ref': 'Request reference',
+    'recap-title': 'Summary of your request',
+    'recap-product': 'Product',
+    'recap-occasion': 'Occasion',
+    'recap-design': 'Style',
+    'recap-marques': 'Desired houses',
+    'recap-couleur': 'Colours',
+    'recap-reference': 'Visual reference',
+    'recap-prix': 'Budget',
+    'recap-delai': 'Timeline',
+    'recap-livraison': 'Delivery',
+    'recap-paiement': 'Payment',
+    'recap-visibilite': 'Visibility',
+    'recap-source': 'Source',
+    'recap-message': 'Personal message',
+    'send-info': '✦ Your request will be sent to our dedicated WhatsApp. Our team will process it as soon as possible.',
+    'send-btn-whatsapp': '✦ Send on WhatsApp',
+    'send-btn-pdf': '↓ Download my recap as souvenir',
+    'footer-tag': '— Elegance, redefined —',
+    'wa-header': '✦ COMPLETE SERENVO REQUEST ✦',
+    'wa-inscription': '🌟 *SIGNATURE CLIENT REGISTRATION*',
+    'wa-reference': 'Reference:',
+    'wa-place-luxe': '✨ Place of luxury:',
+    'wa-budget-mensuel': '💰 Monthly budget:',
+    'wa-frequence': '📅 Frequency:',
+    'wa-aspect': '🎯 Privileged aspect:',
+    'wa-attentes': '💎 *Expectations*:',
+    'wa-precisions': '📝 *Details*:',
+    'wa-signature': '✓ Electronic signature affixed on',
+    'wa-demande': '🛍️ *ITEM REQUEST —',
+    'wa-cliente': '👤 *CLIENT*',
+    'wa-produit': '🛍️ *PRODUCT*',
+    'wa-style': 'Style:',
+    'wa-maisons': '✨ *DESIRED HOUSES*',
+    'wa-surprise': 'Surprise me',
+    'wa-couleurs': '🎨 *COLOURS*',
+    'wa-reference-vis': '📸 *VISUAL REFERENCE*',
+    'wa-lien': 'Link:',
+    'wa-photo-note': '(Photo to be sent separately on WhatsApp)',
+    'wa-budget': '💰 *BUDGET*',
+    'wa-delai-souhaite': '⏱️ *DESIRED TIMELINE*',
+    'wa-livraison': '🚚 *DELIVERY*',
+    'wa-paiement': '💳 *PAYMENT*',
+    'wa-paiement-revolut': '(secure external payment, instalments possible)',
+    'wa-paiement-paypal': '(secure external payment)',
+    'wa-visibilite': '📱 *COMMUNITY VISIBILITY*',
+    'wa-source': '🔗 *SOURCE*',
+    'wa-message-perso': '💬 *PERSONAL MESSAGE*',
+    'wa-footer-combined': 'Signature Client Registration + Item Request',
+    'wa-footer-simple': 'Prepared via the Serenvo simulator',
+    'wa-the': 'On'
+  },
+  es: {
+    'hero-tagline': 'Casa de Solicitudes Privilegiadas',
+    'hero-sub': 'Bienvenida a tu espacio privilegiado.<br>Compón la solicitud que te define.',
+    'hero-btn': '◆ Comenzar mi recorrido',
+    'intro-eyebrow': '◆ Tu recorrido en 12 pasos',
+    'intro-title-1': 'Antes de comenzar,',
+    'intro-title-2': 'unos momentos juntos.',
+    'intro-desc': 'Este simulador te guiará a través de una selección de criterios, para que podamos ofrecerte la pieza que corresponde exactamente a tus deseos — ya sea en boutique o exclusivamente buscada para ti.',
+    'intro-btn': 'Componer mi solicitud',
+    'step-label': 'Paso',
+    'btn-prev': '← Anterior',
+    'btn-next': 'Siguiente →',
+    'btn-finalize': 'Finalizar mi solicitud →',
+    'steps-labels': ['Identidad', 'Tipo de producto', 'Ocasión', 'Diseño', 'Marcas', 'Colores', 'Referencia', 'Precio', 'Plazo', 'Entrega', 'Pago', 'Acabados'],
+    'step1-title': "Primero, <em>conozcámonos</em>.",
+    'step1-desc': 'Para personalizar tu solicitud de principio a fin.',
+    'step1-prenom-label': 'Nombre',
+    'step1-prenom-ph': 'Tu nombre',
+    'step1-nom-label': 'Apellido',
+    'step1-nom-ph': 'Tu apellido',
+    'step2-title': '¿Qué <em>buscas</em>?',
+    'step2-desc': 'Selecciona la categoría que te interesa.',
+    'step2-options': ['Bandolera', 'Bolso de mano', 'Tote', 'Bolso saco', 'Cartera'],
+    'step3-title': '¿Para qué <em>ocasión</em>?',
+    'step3-desc': 'Esto nos ayuda a orientar nuestra selección.',
+    'step3-options': ['Diario', 'Trabajo', 'Evento especial', 'Viaje', 'Regalo'],
+    'step4-title': '¿Tu estilo <em>estético</em>?',
+    'step4-desc': '¿Qué dirección visual te habla más?',
+    'step4-options': ['Clásico atemporal', 'Moderno minimalista', 'Icónico reconocible', 'Editorial audaz', 'Otro'],
+    'step4-other-ph': 'Precisa tu estilo...',
+    'step5-title': 'Tus <em>casas preferidas</em>.',
+    'step5-desc': 'Selecciona una o varias marcas. Las casas marcadas <em style="color:#c9a961">"EXCLUSIVO"</em> solo están disponibles bajo solicitud personalizada.',
+    'step5-exclusif-label': 'EXCLUSIVO',
+    'step6-title': 'Tus <em>colores</em>.',
+    'step6-desc': '¿Qué paleta te corresponde?',
+    'step6-options': ['Tonos neutros (negro, beige, blanco)', 'Tonos cálidos (rojo, ocre, marrón)', 'Tonos fríos (azul, verde, gris)', 'Color específico', 'Sorpréndeme'],
+    'step6-precise-ph': 'Ej: Burdeos, verde bosque, terracota...',
+    'step7-title': '¿Tienes una <em>referencia en mente</em>?',
+    'step7-desc': 'Una imagen vale más que mil palabras — comparte tu inspiración si la tienes.',
+    'step7-options': ['Sí, tengo un enlace (Pinterest, Instagram, etc.)', 'Sí, voy a enviar una foto por WhatsApp', 'No, confío en ti'],
+    'step7-link-ph': 'Pega tu enlace (Pinterest, Instagram, sitio oficial...)',
+    'step7-photo-label': 'Adjuntar una foto (opcional)',
+    'step7-photo-hint': 'Haz clic para añadir una imagen',
+    'step7-photo-change': 'Cambiar imagen',
+    'step8-title': 'Tu <em>presupuesto</em>.',
+    'step8-desc': 'Indica el rango que te corresponde.',
+    'step8-options': ['Hasta 1.500 €', 'Entre 1.500 y 3.000 €', 'Entre 3.000 y 5.000 €', 'Más de 5.000 €', 'A determinar juntos'],
+    'step8-precise-label': 'Precisa si es necesario',
+    'step8-precise-ph': 'Ej: hasta 3.500 €, hasta 5.000 €...',
+    'step9-title': '¿Tu <em>plazo</em>?',
+    'step9-desc': 'Para piezas exclusivas, el plazo de aprovisionamiento varía. Indica tu preferencia.',
+    'step9-options': ['Sin prisa, en las próximas semanas', 'Idealmente en 2-3 semanas', 'Es urgente (dentro de 1 semana)', 'Para una fecha precisa'],
+    'step9-date-label': 'Fecha deseada',
+    'step10-title': 'Tu <em>entrega</em>.',
+    'step10-desc': 'Estándar o exprés, tú decides.',
+    'step10-options': ['Estándar (3-7 días laborables) — Gratuita', 'Exprés (2-4 días laborables) — +25 €'],
+    'step11-title': 'Tu <em>pago</em>.',
+    'step11-info-default': 'El pago se realizará directamente en el sitio Serenvo, con toda seguridad.',
+    'step11-info-exclusif': '⚠ Para esta solicitud que contiene únicamente piezas exclusivas, el pago se realizará de manera externa y segura. Te acompañamos en cada etapa.',
+    'step11-options': ['Tarjeta bancaria (Visa, Mastercard, Amex)', 'Apple Pay', 'PayPal', 'Revolut Pay', 'A discutir juntos'],
+    'step12-title': 'Algunos <em>últimos toques</em>.',
+    'step12-desc': 'Para perfeccionar tu experiencia.',
+    'step12-visibility-label': '¿Te gustaría destacar en nuestra comunidad? (opcional)',
+    'step12-visibility-options': ['Testimonio escrito', 'Foto con la pieza', 'Vídeo de presentación', 'Sin destacar'],
+    'step12-source-label': '¿Cómo conociste Serenvo?',
+    'step12-source-options': ['Instagram', 'TikTok', 'Boca a boca', 'Búsqueda Google', 'Sitio Serenvo', 'Otro'],
+    'step12-source-other-ph': 'Precisa...',
+    'step12-message-label': '¿Un mensaje personal? (opcional)',
+    'step12-message-ph': 'Una referencia precisa vista en otro lugar, un detalle importante, una expectativa particular...',
+    'final-title-1': 'Tu solicitud,',
+    'final-title-2': 'registrada con cuidado',
+    'final-subtitle': 'Aquí está el resumen de tu búsqueda personalizada. Ahora puedes enviarla por WhatsApp para finalizar con nuestro equipo.',
+    'final-ref': 'Solicitud de referencia',
+    'recap-title': 'Resumen de tu solicitud',
+    'recap-product': 'Producto',
+    'recap-occasion': 'Ocasión',
+    'recap-design': 'Estilo',
+    'recap-marques': 'Casas deseadas',
+    'recap-couleur': 'Colores',
+    'recap-reference': 'Referencia visual',
+    'recap-prix': 'Presupuesto',
+    'recap-delai': 'Plazo',
+    'recap-livraison': 'Entrega',
+    'recap-paiement': 'Pago',
+    'recap-visibilite': 'Visibilidad',
+    'recap-source': 'Fuente',
+    'recap-message': 'Mensaje personal',
+    'send-info': '✦ Tu solicitud se enviará a nuestro WhatsApp dedicado. Nuestro equipo la procesará lo antes posible.',
+    'send-btn-whatsapp': '✦ Enviar por WhatsApp',
+    'send-btn-pdf': '↓ Descargar mi ficha como recuerdo',
+    'footer-tag': '— La elegancia, de otra manera —',
+    'wa-header': '✦ SOLICITUD COMPLETA SERENVO ✦',
+    'wa-inscription': '🌟 *INSCRIPCIÓN CLIENTE SIGNATURE*',
+    'wa-reference': 'Referencia:',
+    'wa-place-luxe': '✨ Lugar del lujo:',
+    'wa-budget-mensuel': '💰 Presupuesto mensual:',
+    'wa-frequence': '📅 Frecuencia:',
+    'wa-aspect': '🎯 Aspecto privilegiado:',
+    'wa-attentes': '💎 *Expectativas*:',
+    'wa-precisions': '📝 *Precisiones*:',
+    'wa-signature': '✓ Firma electrónica colocada el',
+    'wa-demande': '🛍️ *SOLICITUD DE ARTÍCULO —',
+    'wa-cliente': '👤 *CLIENTE*',
+    'wa-produit': '🛍️ *PRODUCTO*',
+    'wa-style': 'Estilo:',
+    'wa-maisons': '✨ *CASAS DESEADAS*',
+    'wa-surprise': 'Sorpréndeme',
+    'wa-couleurs': '🎨 *COLORES*',
+    'wa-reference-vis': '📸 *REFERENCIA VISUAL*',
+    'wa-lien': 'Enlace:',
+    'wa-photo-note': '(Foto a enviar por separado por WhatsApp)',
+    'wa-budget': '💰 *PRESUPUESTO*',
+    'wa-delai-souhaite': '⏱️ *PLAZO DESEADO*',
+    'wa-livraison': '🚚 *ENTREGA*',
+    'wa-paiement': '💳 *PAGO*',
+    'wa-paiement-revolut': '(pago externo seguro, varias veces posible)',
+    'wa-paiement-paypal': '(pago externo seguro)',
+    'wa-visibilite': '📱 *VISIBILIDAD COMUNIDAD*',
+    'wa-source': '🔗 *FUENTE*',
+    'wa-message-perso': '💬 *MENSAJE PERSONAL*',
+    'wa-footer-combined': 'Inscripción Cliente Signature + Solicitud de artículo',
+    'wa-footer-simple': 'Preparada vía el simulador Serenvo',
+    'wa-the': 'El'
+  },
+  de: {
+    'hero-tagline': 'Haus der Privilegierten Anfragen',
+    'hero-sub': 'Willkommen in Ihrem privilegierten Raum.<br>Stellen Sie die Anfrage zusammen, die Ihnen entspricht.',
+    'hero-btn': '◆ Meinen Werdegang beginnen',
+    'intro-eyebrow': '◆ Ihr Werdegang in 12 Schritten',
+    'intro-title-1': 'Bevor wir beginnen,',
+    'intro-title-2': 'einige Momente gemeinsam.',
+    'intro-desc': 'Dieser Simulator wird Sie durch eine Auswahl von Kriterien führen, damit wir Ihnen das Stück anbieten können, das genau Ihren Wünschen entspricht — sei es im Geschäft oder exklusiv für Sie aufgespürt.',
+    'intro-btn': 'Meine Anfrage zusammenstellen',
+    'step-label': 'Schritt',
+    'btn-prev': '← Zurück',
+    'btn-next': 'Weiter →',
+    'btn-finalize': 'Meine Anfrage abschließen →',
+    'steps-labels': ['Identität', 'Produkttyp', 'Anlass', 'Design', 'Marken', 'Farben', 'Referenz', 'Preis', 'Frist', 'Lieferung', 'Zahlung', 'Feinheiten'],
+    'step1-title': "Lernen wir uns zuerst <em>kennen</em>.",
+    'step1-desc': 'Um Ihre Anfrage von Anfang bis Ende zu personalisieren.',
+    'step1-prenom-label': 'Vorname',
+    'step1-prenom-ph': 'Ihr Vorname',
+    'step1-nom-label': 'Nachname',
+    'step1-nom-ph': 'Ihr Nachname',
+    'step2-title': 'Was <em>suchen Sie</em>?',
+    'step2-desc': 'Wählen Sie die Kategorie, die Sie interessiert.',
+    'step2-options': ['Umhängetasche', 'Handtasche', 'Shopper', 'Beuteltasche', 'Geldbörse'],
+    'step3-title': 'Für welchen <em>Anlass</em>?',
+    'step3-desc': 'Das hilft uns, unsere Auswahl zu lenken.',
+    'step3-options': ['Alltag', 'Arbeit', 'Besonderer Anlass', 'Reise', 'Geschenk'],
+    'step4-title': 'Ihr <em>ästhetischer</em> Stil?',
+    'step4-desc': 'Welche visuelle Richtung spricht Sie am meisten an?',
+    'step4-options': ['Zeitloser Klassiker', 'Modern minimalistisch', 'Ikonisch erkennbar', 'Mutig editorial', 'Andere'],
+    'step4-other-ph': 'Präzisieren Sie Ihren Stil...',
+    'step5-title': 'Ihre <em>Lieblingshäuser</em>.',
+    'step5-desc': 'Wählen Sie eine oder mehrere Marken. Mit <em style="color:#c9a961">"EXKLUSIV"</em> markierte Häuser sind nur auf personalisierte Anfrage erhältlich.',
+    'step5-exclusif-label': 'EXKLUSIV',
+    'step6-title': 'Ihre <em>Farben</em>.',
+    'step6-desc': 'Welche Palette entspricht Ihnen?',
+    'step6-options': ['Neutrale Töne (Schwarz, Beige, Weiß)', 'Warme Töne (Rot, Ocker, Braun)', 'Kalte Töne (Blau, Grün, Grau)', 'Bestimmte Farbe', 'Überraschen Sie mich'],
+    'step6-precise-ph': 'Bsp: Bordeaux, Tannengrün, Terrakotta...',
+    'step7-title': 'Haben Sie eine <em>Referenz im Sinn</em>?',
+    'step7-desc': 'Ein Bild sagt mehr als tausend Worte — teilen Sie uns Ihre Inspiration mit, wenn Sie eine haben.',
+    'step7-options': ['Ja, ich habe einen Link (Pinterest, Instagram, etc.)', 'Ja, ich werde ein Foto auf WhatsApp senden', 'Nein, ich vertraue Ihnen'],
+    'step7-link-ph': 'Fügen Sie Ihren Link ein (Pinterest, Instagram, offizielle Seite...)',
+    'step7-photo-label': 'Ein Foto anhängen (optional)',
+    'step7-photo-hint': 'Klicken Sie, um ein Bild hinzuzufügen',
+    'step7-photo-change': 'Bild ändern',
+    'step8-title': 'Ihr <em>Budget</em>.',
+    'step8-desc': 'Geben Sie die Spanne an, die Ihnen entspricht.',
+    'step8-options': ['Bis 1.500 €', 'Zwischen 1.500 und 3.000 €', 'Zwischen 3.000 und 5.000 €', 'Mehr als 5.000 €', 'Gemeinsam zu bestimmen'],
+    'step8-precise-label': 'Präzisieren Sie bei Bedarf',
+    'step8-precise-ph': 'Bsp: bis 3.500 €, bis 5.000 €...',
+    'step9-title': 'Ihre <em>Frist</em>?',
+    'step9-desc': 'Für exklusive Stücke variiert die Beschaffungszeit. Geben Sie Ihre Präferenz an.',
+    'step9-options': ['Keine Eile, in den kommenden Wochen', 'Idealerweise in 2-3 Wochen', 'Es ist dringend (innerhalb 1 Woche)', 'Für ein bestimmtes Datum'],
+    'step9-date-label': 'Gewünschtes Datum',
+    'step10-title': 'Ihre <em>Lieferung</em>.',
+    'step10-desc': 'Standard oder Express, Sie entscheiden.',
+    'step10-options': ['Standard (3-7 Werktage) — Kostenlos', 'Express (2-4 Werktage) — +25 €'],
+    'step11-title': 'Ihre <em>Zahlung</em>.',
+    'step11-info-default': 'Die Zahlung erfolgt direkt auf der Serenvo-Website, sicher.',
+    'step11-info-exclusif': '⚠ Für diese Anfrage, die ausschließlich exklusive Stücke enthält, erfolgt die Zahlung extern und sicher. Wir begleiten Sie in jeder Etappe.',
+    'step11-options': ['Kreditkarte (Visa, Mastercard, Amex)', 'Apple Pay', 'PayPal', 'Revolut Pay', 'Gemeinsam zu besprechen'],
+    'step12-title': 'Einige <em>letzte Feinheiten</em>.',
+    'step12-desc': 'Um Ihr Erlebnis zu vervollkommnen.',
+    'step12-visibility-label': 'Möchten Sie in unserer Gemeinschaft hervorgehoben werden? (optional)',
+    'step12-visibility-options': ['Schriftliches Testimonial', 'Foto mit dem Stück', 'Präsentationsvideo', 'Keine Hervorhebung'],
+    'step12-source-label': 'Wie haben Sie von Serenvo erfahren?',
+    'step12-source-options': ['Instagram', 'TikTok', 'Mundpropaganda', 'Google-Suche', 'Serenvo-Website', 'Andere'],
+    'step12-source-other-ph': 'Präzisieren...',
+    'step12-message-label': 'Eine persönliche Nachricht? (optional)',
+    'step12-message-ph': 'Eine genaue anderswo gesehene Referenz, ein wichtiges Detail, eine besondere Erwartung...',
+    'final-title-1': 'Ihre Anfrage,',
+    'final-title-2': 'sorgfältig verzeichnet',
+    'final-subtitle': 'Hier ist die Zusammenfassung Ihrer personalisierten Suche. Sie können sie nun auf WhatsApp senden, um sie mit unserem Team abzuschließen.',
+    'final-ref': 'Anfragereferenz',
+    'recap-title': 'Zusammenfassung Ihrer Anfrage',
+    'recap-product': 'Produkt',
+    'recap-occasion': 'Anlass',
+    'recap-design': 'Stil',
+    'recap-marques': 'Gewünschte Häuser',
+    'recap-couleur': 'Farben',
+    'recap-reference': 'Visuelle Referenz',
+    'recap-prix': 'Budget',
+    'recap-delai': 'Frist',
+    'recap-livraison': 'Lieferung',
+    'recap-paiement': 'Zahlung',
+    'recap-visibilite': 'Sichtbarkeit',
+    'recap-source': 'Quelle',
+    'recap-message': 'Persönliche Nachricht',
+    'send-info': '✦ Ihre Anfrage wird an unser dediziertes WhatsApp gesendet. Unser Team wird sie schnellstmöglich bearbeiten.',
+    'send-btn-whatsapp': '✦ Auf WhatsApp senden',
+    'send-btn-pdf': '↓ Mein Datenblatt als Andenken herunterladen',
+    'footer-tag': '— Eleganz, neu definiert —',
+    'wa-header': '✦ KOMPLETTE SERENVO-ANFRAGE ✦',
+    'wa-inscription': '🌟 *SIGNATURE-KUNDIN-ANMELDUNG*',
+    'wa-reference': 'Referenz:',
+    'wa-place-luxe': '✨ Stellenwert des Luxus:',
+    'wa-budget-mensuel': '💰 Monatliches Budget:',
+    'wa-frequence': '📅 Häufigkeit:',
+    'wa-aspect': '🎯 Privilegierter Aspekt:',
+    'wa-attentes': '💎 *Erwartungen*:',
+    'wa-precisions': '📝 *Präzisierungen*:',
+    'wa-signature': '✓ Elektronische Unterschrift angebracht am',
+    'wa-demande': '🛍️ *ARTIKELANFRAGE —',
+    'wa-cliente': '👤 *KUNDIN*',
+    'wa-produit': '🛍️ *PRODUKT*',
+    'wa-style': 'Stil:',
+    'wa-maisons': '✨ *GEWÜNSCHTE HÄUSER*',
+    'wa-surprise': 'Überraschen Sie mich',
+    'wa-couleurs': '🎨 *FARBEN*',
+    'wa-reference-vis': '📸 *VISUELLE REFERENZ*',
+    'wa-lien': 'Link:',
+    'wa-photo-note': '(Foto separat auf WhatsApp zu senden)',
+    'wa-budget': '💰 *BUDGET*',
+    'wa-delai-souhaite': '⏱️ *GEWÜNSCHTE FRIST*',
+    'wa-livraison': '🚚 *LIEFERUNG*',
+    'wa-paiement': '💳 *ZAHLUNG*',
+    'wa-paiement-revolut': '(sichere externe Zahlung, mehrmals möglich)',
+    'wa-paiement-paypal': '(sichere externe Zahlung)',
+    'wa-visibilite': '📱 *GEMEINSCHAFT-SICHTBARKEIT*',
+    'wa-source': '🔗 *QUELLE*',
+    'wa-message-perso': '💬 *PERSÖNLICHE NACHRICHT*',
+    'wa-footer-combined': 'Signature-Kundin-Anmeldung + Artikelanfrage',
+    'wa-footer-simple': 'Vorbereitet über den Serenvo-Simulator',
+    'wa-the': 'Am'
+  }
+};
+
+// Mapping FR -> traduction (pour l'affichage des options sélectionnées dans la langue active)
+// Les valeurs FR restent dans data.* pour le Google Sheet
+const valueMapSim = {
+  typeProduit: { fr: ['Bandoulière', 'Sac à main', 'Cabas', 'Sac seau', 'Portefeuille'] },
+  occasion: { fr: ['Quotidien · Travail', 'Soirée · Événement', 'Voyage', 'Cadeau', 'Pièce de collection'] },
+  design: { fr: ['Sobre & épuré', 'À motifs', 'Extravagant', 'Autre'] },
+  couleurType: { fr: ['Neutres', 'Vives'] },
+  referenceVisuelle: { fr: ['Oui, je joins une photo', "Oui, j'ai un lien à partager", 'Non, je vous fais confiance'] },
+  prix: { fr: ['Jusqu\'à 1 500 €', 'Entre 1 500 et 3 000 €', 'Entre 3 000 et 5 000 €', 'Plus de 5 000 €', 'À déterminer ensemble'] },
+  delai: { fr: ['Pas pressée, dans les semaines à venir', 'Idéalement dans 2-3 semaines', "C'est urgent (sous 1 semaine)", 'Pour une date précise'] },
+  livraison: { fr: ['Standard (3-7 jours ouvrés) — Offerte', 'Express (2-4 jours ouvrés) — +25 €'] },
+  paiement: { fr: ['Carte bancaire (Visa, Mastercard, Amex)', 'Apple Pay', 'PayPal', 'Revolut Pay', 'À discuter ensemble'] },
+  visibilite: { fr: ['Témoignage écrit', 'Photo avec la pièce', 'Vidéo de présentation', 'Aucune mise en avant'] },
+  sourceConnaissance: { fr: ['Instagram', 'TikTok', 'Bouche-à-oreille', 'Recherche Google', 'Site Serenvo', 'Autre'] }
+};
+
+// Helper traduction
+function t(key) {
+  return (i18nSim[currentLang] && i18nSim[currentLang][key] !== undefined) ? i18nSim[currentLang][key] : i18nSim.fr[key] || key;
+}
+
+// Récupère les options dans la langue active mais retourne aussi la valeur FR
+function getOptions(field, optionsKey) {
+  const display = i18nSim[currentLang][optionsKey] || i18nSim.fr[optionsKey];
+  const stored = valueMapSim[field] ? valueMapSim[field].fr : i18nSim.fr[optionsKey];
+  return { display, stored };
+}
+
+// Sélection d'une option simple : on stocke en FR
+function selectOptionSim(field, displayValue, optionsKey) {
+  const display = i18nSim[currentLang][optionsKey] || i18nSim.fr[optionsKey];
+  const idx = display.indexOf(displayValue);
+  if (idx !== -1 && valueMapSim[field]) {
+    data[field] = valueMapSim[field].fr[idx];
+  } else {
+    data[field] = displayValue;
+  }
+  renderStep();
+}
+
+// Sélection d'une option dans une liste (multi-select pour visibilité)
+function toggleOptionSim(field, displayValue, optionsKey) {
+  const display = i18nSim[currentLang][optionsKey] || i18nSim.fr[optionsKey];
+  const idx = display.indexOf(displayValue);
+  const frValue = (idx !== -1 && valueMapSim[field]) ? valueMapSim[field].fr[idx] : displayValue;
+  const arrIdx = data[field].indexOf(frValue);
+  if (arrIdx === -1) data[field].push(frValue);
+  else data[field].splice(arrIdx, 1);
+  renderStep();
+}
+
+// Sélecteur de langue
+const langLabelsSim = {
+  fr: { flag: '🇫🇷', code: 'FR' },
+  en: { flag: '🇬🇧', code: 'EN' },
+  es: { flag: '🇪🇸', code: 'ES' },
+  de: { flag: '🇩🇪', code: 'DE' }
+};
+
+function toggleLangDropdown() {
+  document.getElementById('langSelector').classList.toggle('open');
+}
+
+function setLanguage(lang) {
+  if (!i18nSim[lang]) return;
+  currentLang = lang;
+  try { localStorage.setItem('serenvoLang', lang); } catch (e) {}
+  document.getElementById('currentFlag').textContent = langLabelsSim[lang].flag;
+  document.getElementById('currentLang').textContent = langLabelsSim[lang].code;
+  document.querySelectorAll('.lang-option').forEach(opt => {
+    opt.classList.toggle('active', opt.dataset.lang === lang);
+  });
+  document.documentElement.lang = lang;
+  document.getElementById('langSelector').classList.remove('open');
+  applyStaticTranslationsSim();
+  if (document.getElementById('form').classList.contains('active')) {
+    renderStep();
+  }
+  if (document.getElementById('finale').classList.contains('active')) {
+    rebuildRecap();
+  }
+}
+
+document.addEventListener('click', (e) => {
+  const selector = document.getElementById('langSelector');
+  if (selector && !selector.contains(e.target)) selector.classList.remove('open');
+});
+
+function applyStaticTranslationsSim() {
+  // Hero
+  const heroTagline = document.querySelector('.hero-tagline');
+  if (heroTagline) heroTagline.textContent = t('hero-tagline');
+  const heroSub = document.querySelector('.hero-sub');
+  if (heroSub) heroSub.innerHTML = t('hero-sub');
+  const heroBtn = document.querySelector('.hero-btn span');
+  if (heroBtn) heroBtn.textContent = t('hero-btn');
+
+  // Intro
+  const introEyebrow = document.querySelector('.intro-eyebrow');
+  if (introEyebrow) introEyebrow.textContent = t('intro-eyebrow');
+  const introTitle = document.querySelector('.intro-title');
+  if (introTitle) introTitle.innerHTML = `${t('intro-title-1')}<br><em>${t('intro-title-2')}</em>`;
+  const introDesc = document.querySelector('.intro-desc');
+  if (introDesc) introDesc.textContent = t('intro-desc');
+  const introBtn = document.querySelector('#intro .btn-primary span');
+  if (introBtn) introBtn.textContent = t('intro-btn');
+
+  // Form labels
+  const stepLabel = document.querySelector('.step-label');
+  if (stepLabel) {
+    const num = currentStep || 1;
+    stepLabel.innerHTML = `${t('step-label')} <span id="stepNum">${num}</span> / 12`;
+  }
+  const btnPrev = document.getElementById('btnPrev');
+  if (btnPrev) btnPrev.textContent = t('btn-prev');
+  const btnNextText = document.getElementById('btnNextText');
+  if (btnNextText && typeof totalSteps !== 'undefined') {
+    btnNextText.textContent = currentStep === totalSteps ? t('btn-finalize') : t('btn-next');
+  }
+
+  // Footer
+  const footerTag = document.querySelector('.recap-footer-tag');
+  if (footerTag) footerTag.textContent = t('footer-tag');
+}
+
 const stepsLabels = [
   'Identité', 'Type de produit', 'Occasion', 'Design',
   'Marques', 'Couleurs', 'Référence', 'Prix',
@@ -920,13 +1618,21 @@ function renderStep() {
     stepbar.appendChild(seg);
   }
   document.getElementById('stepNum').textContent = currentStep;
-  document.getElementById('stepName').textContent = stepsLabels[currentStep - 1];
+  const labels = i18nSim[currentLang]['steps-labels'] || i18nSim.fr['steps-labels'];
+  document.getElementById('stepName').textContent = labels[currentStep - 1];
 
   // Bouton précédent
   document.getElementById('btnPrev').classList.toggle('hidden', currentStep === 1);
+  document.getElementById('btnPrev').textContent = t('btn-prev');
 
   // Bouton suivant
-  document.getElementById('btnNextText').textContent = currentStep === 12 ? 'Finaliser ma demande →' : 'Suivant →';
+  document.getElementById('btnNextText').textContent = currentStep === 12 ? t('btn-finalize') : t('btn-next');
+
+  // Met à jour le label "Étape X / 12"
+  const stepLabelEl = document.querySelector('.step-label');
+  if (stepLabelEl) {
+    stepLabelEl.innerHTML = `${t('step-label')} <span id="stepNum">${currentStep}</span> / 12`;
+  }
 
   // Contenu
   const content = document.getElementById('stepContent');
@@ -960,30 +1666,32 @@ function updateNextButton() {
 
 function renderStep1() {
   document.getElementById('stepContent').innerHTML = `
-    <h2 class="step-title">Faisons d'abord <em>connaissance</em>.</h2>
-    <p class="step-desc">Pour personnaliser votre demande de bout en bout.</p>
+    <h2 class="step-title">${t('step1-title')}</h2>
+    <p class="step-desc">${t('step1-desc')}</p>
     <div class="input-row">
       <div>
-        <div class="step-label" style="margin-bottom: 8px;">Prénom</div>
-        <input type="text" class="input" id="prenom" placeholder="Votre prénom" value="${data.prenom}" oninput="data.prenom=this.value; updateNextButton()">
+        <div class="step-label" style="margin-bottom: 8px;">${t('step1-prenom-label')}</div>
+        <input type="text" class="input" id="prenom" placeholder="${t('step1-prenom-ph')}" value="${data.prenom}" oninput="data.prenom=this.value; updateNextButton()">
       </div>
       <div>
-        <div class="step-label" style="margin-bottom: 8px;">Nom</div>
-        <input type="text" class="input" id="nom" placeholder="Votre nom" value="${data.nom}" oninput="data.nom=this.value; updateNextButton()">
+        <div class="step-label" style="margin-bottom: 8px;">${t('step1-nom-label')}</div>
+        <input type="text" class="input" id="nom" placeholder="${t('step1-nom-ph')}" value="${data.nom}" oninput="data.nom=this.value; updateNextButton()">
       </div>
     </div>
   `;
 }
 
 function renderStep2() {
-  const types = ['Bandoulière', 'Sac à main', 'Cabas', 'Sac seau', 'Portefeuille'];
+  const display = i18nSim[currentLang]['step2-options'] || i18nSim.fr['step2-options'];
+  const stored = valueMapSim.typeProduit.fr;
   let html = `
-    <h2 class="step-title">Que <em>recherchez-vous</em> ?</h2>
-    <p class="step-desc">Sélectionnez la catégorie qui vous intéresse.</p>
+    <h2 class="step-title">${t('step2-title')}</h2>
+    <p class="step-desc">${t('step2-desc')}</p>
     <div class="cards-grid grid-3">
   `;
-  types.forEach(t => {
-    html += `<div class="card ${data.typeProduit === t ? 'selected' : ''}" onclick="data.typeProduit='${t}'; renderStep()"><div class="card-title">${t}</div></div>`;
+  display.forEach((label, i) => {
+    const frValue = stored[i];
+    html += `<div class="card ${data.typeProduit === frValue ? 'selected' : ''}" onclick="selectOptionSim('typeProduit', '${label.replace(/'/g, "\\'")}', 'step2-options')"><div class="card-title">${label}</div></div>`;
   });
   html += '</div>';
   document.getElementById('stepContent').innerHTML = html;
@@ -992,12 +1700,12 @@ function renderStep2() {
 function renderStep3() {
   const occasions = ['Quotidien · Travail', 'Soirée · Événement', 'Voyage', 'Cadeau', 'Pièce de collection'];
   let html = `
-    <h2 class="step-title">Pour quelle <em>occasion</em> ?</h2>
-    <p class="step-desc">Cela nous aide à orienter notre sélection.</p>
+    <h2 class="step-title">${t('step3-title')}</h2>
+    <p class="step-desc">${t('step3-desc')}</p>
     <div class="cards-grid grid-3">
   `;
-  occasions.forEach(t => {
-    html += `<div class="card ${data.occasion === t ? 'selected' : ''}" onclick="data.occasion='${t}'; renderStep()"><div class="card-title">${t}</div></div>`;
+  occasions.forEach(o => {
+    html += `<div class="card ${data.occasion === o ? 'selected' : ''}" onclick="data.occasion='${o.replace(/'/g, "\\'")}'; renderStep()"><div class="card-title">${o}</div></div>`;
   });
   html += '</div>';
   document.getElementById('stepContent').innerHTML = html;
@@ -1006,29 +1714,29 @@ function renderStep3() {
 function renderStep4() {
   const designs = ['Sobre & épuré', 'À motifs', 'Extravagant', 'Autre'];
   let html = `
-    <h2 class="step-title">Votre style <em>esthétique</em> ?</h2>
-    <p class="step-desc">Quelle direction visuelle vous parle le plus ?</p>
+    <h2 class="step-title">${t('step4-title')}</h2>
+    <p class="step-desc">${t('step4-desc')}</p>
     <div class="cards-grid grid-3" style="margin-bottom: 24px;">
   `;
-  designs.forEach(t => {
-    html += `<div class="card ${data.design === t ? 'selected' : ''}" onclick="data.design='${t}'; renderStep()"><div class="card-title">${t}</div></div>`;
+  designs.forEach(d => {
+    html += `<div class="card ${data.design === d ? 'selected' : ''}" onclick="data.design='${d.replace(/'/g, "\\'")}'; renderStep()"><div class="card-title">${d}</div></div>`;
   });
   html += '</div>';
   if (data.design === 'Autre') {
-    html += `<input type="text" class="input selected-precision-input" placeholder="Précisez votre style..." value="${data.designAutre}" oninput="data.designAutre=this.value; updateNextButton()">`;
+    html += `<input type="text" class="input selected-precision-input" placeholder="${t('step4-other-ph')}" value="${data.designAutre}" oninput="data.designAutre=this.value; updateNextButton()">`;
   }
   document.getElementById('stepContent').innerHTML = html;
 }
 
 function renderStep5() {
   let html = `
-    <h2 class="step-title">Vos <em>maisons préférées</em>.</h2>
-    <p class="step-desc">Sélectionnez une ou plusieurs marques. Les maisons marquées <em style="color:#c9a961">"EXCLUSIF"</em> sont uniquement disponibles sur demande personnalisée.</p>
+    <h2 class="step-title">${t('step5-title')}</h2>
+    <p class="step-desc">${t('step5-desc')}</p>
   `;
   if (data.marques.length > 0) {
     html += `
       <div class="selected-marques show">
-        <span class="step-label">Sélectionnées : </span>
+        <span class="step-label">${currentLang === 'fr' ? 'Sélectionnées' : (currentLang === 'en' ? 'Selected' : (currentLang === 'es' ? 'Seleccionadas' : 'Ausgewählt'))} : </span>
         <span class="cormorant" style="font-style: italic; color: #e4c989;">${data.marques.join(' · ')}</span>
       </div>
     `;
@@ -1036,23 +1744,32 @@ function renderStep5() {
   html += '<div class="marques-grid">';
   marques.forEach(m => {
     const sel = data.marques.includes(m.nom) ? 'selected' : '';
-    const badge = m.statut === 'hors' ? '<span class="marque-badge">Exclusif</span>' : '';
+    const badge = m.statut === 'hors' ? `<span class="marque-badge">${t('step5-exclusif-label')}</span>` : '';
     html += `<div class="marque ${sel}" onclick="toggleMarque('${m.nom.replace(/'/g, "\\'")}')">${badge}${m.nom}</div>`;
   });
   html += '</div>';
   const surpriseSel = data.marques.includes('Surprenez-moi') ? 'selected' : '';
+  const surpriseLabel = currentLang === 'fr' ? 'Surprenez-moi — pas de préférence'
+    : currentLang === 'en' ? 'Surprise me — no preference'
+    : currentLang === 'es' ? 'Sorpréndeme — sin preferencia'
+    : 'Überraschen Sie mich — keine Präferenz';
   html += `<div class="card ${surpriseSel}" style="margin-top: 20px; padding: 18px 24px;" onclick="toggleMarque('Surprenez-moi')">
-    <div class="cormorant" style="font-size: 1.15rem; font-style: italic; color: #e4c989;">◆ Surprenez-moi — pas de préférence</div>
+    <div class="cormorant" style="font-size: 1.15rem; font-style: italic; color: #e4c989;">◆ ${surpriseLabel}</div>
   </div>`;
 
   if (aHorsCatalogue() && !aMixte()) {
-    // CAS 1 : Uniquement des marques exclusives → message complet
-    html += `<div class="info-box">✦ Les maisons que vous avez sélectionnées proposent uniquement des pièces exclusives. Le paiement s'effectue hors site de manière sécurisée, avec possibilité de payer en plusieurs fois.</div>`;
+    const msg = currentLang === 'fr' ? "✦ Les maisons que vous avez sélectionnées proposent uniquement des pièces exclusives. Le paiement s'effectue hors site de manière sécurisée, avec possibilité de payer en plusieurs fois."
+      : currentLang === 'en' ? '✦ The houses you have selected only offer exclusive pieces. Payment is made off-site securely, with the option to pay in instalments.'
+      : currentLang === 'es' ? '✦ Las casas que has seleccionado solo ofrecen piezas exclusivas. El pago se realiza fuera del sitio de manera segura, con la posibilidad de pagar en varias veces.'
+      : '✦ Die von Ihnen ausgewählten Häuser bieten nur exklusive Stücke an. Die Zahlung erfolgt extern sicher, mit der Möglichkeit, in Raten zu zahlen.';
+    html += `<div class="info-box">${msg}</div>`;
   } else if (aHorsCatalogue() && aMixte()) {
-    // CAS 3 : Mix exclusif + mixte → mention courte
-    html += `<div class="info-box">✦ Votre sélection inclut des pièces exclusives. Pour celles-ci, le paiement s'effectue hors site avec possibilité de plusieurs fois. Pour les autres, paiement direct sur le site.</div>`;
+    const msg = currentLang === 'fr' ? "✦ Votre sélection inclut des pièces exclusives. Pour celles-ci, le paiement s'effectue hors site avec possibilité de plusieurs fois. Pour les autres, paiement direct sur le site."
+      : currentLang === 'en' ? '✦ Your selection includes exclusive pieces. For these, payment is made off-site with the option of instalments. For others, direct payment on the site.'
+      : currentLang === 'es' ? '✦ Tu selección incluye piezas exclusivas. Para estas, el pago se realiza fuera del sitio con la posibilidad de varias veces. Para las demás, pago directo en el sitio.'
+      : '✦ Ihre Auswahl umfasst exklusive Stücke. Für diese erfolgt die Zahlung extern mit der Möglichkeit von Raten. Für andere direkte Zahlung auf der Website.';
+    html += `<div class="info-box">${msg}</div>`;
   }
-  // CAS 2 : Que des marques mixtes → pas de message (paiement sur le site, comme d'habitude)
 
   document.getElementById('stepContent').innerHTML = html;
 }
@@ -1065,44 +1782,59 @@ function toggleMarque(nom) {
 }
 
 function renderStep6() {
+  const neutreLabel = currentLang === 'fr' ? 'Neutres' : (currentLang === 'en' ? 'Neutrals' : (currentLang === 'es' ? 'Neutros' : 'Neutral'));
+  const neutreDesc = currentLang === 'fr' ? 'Noir, blanc, marron, beige, ivoire' : (currentLang === 'en' ? 'Black, white, brown, beige, ivory' : (currentLang === 'es' ? 'Negro, blanco, marrón, beige, marfil' : 'Schwarz, weiß, braun, beige, elfenbein'));
+  const vivesLabel = currentLang === 'fr' ? 'Vives' : (currentLang === 'en' ? 'Vivid' : (currentLang === 'es' ? 'Vivos' : 'Lebhaft'));
+  const vivesDesc = currentLang === 'fr' ? 'Rouge, vert, bleu, jaune, vibrant' : (currentLang === 'en' ? 'Red, green, blue, yellow, vibrant' : (currentLang === 'es' ? 'Rojo, verde, azul, amarillo, vibrante' : 'Rot, grün, blau, gelb, lebhaft'));
+  const precisionLabel = currentLang === 'fr' ? 'Précision (optionnel)' : (currentLang === 'en' ? 'Precision (optional)' : (currentLang === 'es' ? 'Precisión (opcional)' : 'Präzisierung (optional)'));
+
   let html = `
-    <h2 class="step-title">Vos <em>couleurs</em>.</h2>
-    <p class="step-desc">Quelle palette vous correspond ?</p>
+    <h2 class="step-title">${t('step6-title')}</h2>
+    <p class="step-desc">${t('step6-desc')}</p>
     <div class="cards-grid grid-2" style="margin-bottom: 32px;">
       <div class="card ${data.couleurType === 'Neutres' ? 'selected' : ''}" onclick="data.couleurType='Neutres'; renderStep()">
-        <div class="card-title" style="font-size: 1.4rem;">Neutres</div>
-        <div class="card-desc">Noir, blanc, marron, beige, ivoire</div>
+        <div class="card-title" style="font-size: 1.4rem;">${neutreLabel}</div>
+        <div class="card-desc">${neutreDesc}</div>
       </div>
       <div class="card ${data.couleurType === 'Vives' ? 'selected' : ''}" onclick="data.couleurType='Vives'; renderStep()">
-        <div class="card-title" style="font-size: 1.4rem;">Vives</div>
-        <div class="card-desc">Rouge, vert, bleu, jaune, vibrant</div>
+        <div class="card-title" style="font-size: 1.4rem;">${vivesLabel}</div>
+        <div class="card-desc">${vivesDesc}</div>
       </div>
     </div>
-    <div class="step-label" style="margin-bottom: 8px;">Précision (optionnel)</div>
-    <input type="text" class="input" placeholder="Ex : Bordeaux, vert sapin, terracotta..." value="${data.couleurPrecision}" oninput="data.couleurPrecision=this.value">
+    <div class="step-label" style="margin-bottom: 8px;">${precisionLabel}</div>
+    <input type="text" class="input" placeholder="${t('step6-precise-ph')}" value="${data.couleurPrecision}" oninput="data.couleurPrecision=this.value">
   `;
   document.getElementById('stepContent').innerHTML = html;
 }
 
 function renderStep7() {
   const opts = ['Oui, je joins une photo', "Oui, j'ai un lien à partager", 'Non, je vous fais confiance'];
+  const optsLang = currentLang === 'fr' ? opts
+    : currentLang === 'en' ? ['Yes, I attach a photo', 'Yes, I have a link to share', "No, I trust you"]
+    : currentLang === 'es' ? ['Sí, adjunto una foto', 'Sí, tengo un enlace para compartir', 'No, confío en ti']
+    : ['Ja, ich füge ein Foto bei', 'Ja, ich habe einen Link zum Teilen', 'Nein, ich vertraue Ihnen'];
+
   let html = `
-    <h2 class="step-title">Avez-vous une <em>référence en tête</em> ?</h2>
-    <p class="step-desc">Une image vaut mille mots — partagez-nous votre inspiration si vous en avez une.</p>
+    <h2 class="step-title">${t('step7-title')}</h2>
+    <p class="step-desc">${t('step7-desc')}</p>
     <div class="cards-grid grid-3" style="margin-bottom: 32px;">
   `;
-  opts.forEach(t => {
-    html += `<div class="card ${data.referenceVisuelle === t ? 'selected' : ''}" onclick="setReference('${t.replace(/'/g, "\\'")}')"><div class="card-title" style="font-size: 1rem;">${t}</div></div>`;
+  opts.forEach((frVal, i) => {
+    const displayLabel = optsLang[i];
+    html += `<div class="card ${data.referenceVisuelle === frVal ? 'selected' : ''}" onclick="setReference('${frVal.replace(/'/g, "\\'")}')"><div class="card-title" style="font-size: 1rem;">${displayLabel}</div></div>`;
   });
   html += '</div>';
 
   if (data.referenceVisuelle === 'Oui, je joins une photo') {
+    const uploadTitle = currentLang === 'fr' ? 'Cliquez pour choisir votre image' : (currentLang === 'en' ? 'Click to choose your image' : (currentLang === 'es' ? 'Haz clic para elegir tu imagen' : 'Klicken Sie, um Ihr Bild auszuwählen'));
+    const uploadHint = currentLang === 'fr' ? 'JPG, PNG, WEBP — Maximum 10 Mo' : (currentLang === 'en' ? 'JPG, PNG, WEBP — Maximum 10 MB' : (currentLang === 'es' ? 'JPG, PNG, WEBP — Máximo 10 MB' : 'JPG, PNG, WEBP — Maximum 10 MB'));
+    const attached = currentLang === 'fr' ? '✓ Image jointe' : (currentLang === 'en' ? '✓ Image attached' : (currentLang === 'es' ? '✓ Imagen adjunta' : '✓ Bild angehängt'));
     if (!photoPreview) {
       html += `
         <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
           <div class="upload-icon">✦</div>
-          <div class="upload-title">Cliquez pour choisir votre image</div>
-          <div class="upload-hint">JPG, PNG, WEBP — Maximum 10 Mo</div>
+          <div class="upload-title">${uploadTitle}</div>
+          <div class="upload-hint">${uploadHint}</div>
         </div>
         <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFileUpload(event)">
       `;
@@ -1110,13 +1842,13 @@ function renderStep7() {
       html += `
         <div class="upload-preview">
           <img src="${photoPreview}" alt="Référence">
-          <div class="upload-filename">✓ Image jointe : ${photoFile.name}</div>
-          <button class="btn-secondary" style="margin-top: 16px;" onclick="resetPhoto()">Changer d'image</button>
+          <div class="upload-filename">${attached} : ${photoFile.name}</div>
+          <button class="btn-secondary" style="margin-top: 16px;" onclick="resetPhoto()">${t('step7-photo-change')}</button>
         </div>
       `;
     }
   } else if (data.referenceVisuelle === "Oui, j'ai un lien à partager") {
-    html += `<input type="text" class="input" placeholder="Collez votre lien (Pinterest, Instagram, site officiel...)" value="${data.referenceLien}" oninput="data.referenceLien=this.value; updateNextButton()">`;
+    html += `<input type="text" class="input" placeholder="${t('step7-link-ph')}" value="${data.referenceLien}" oninput="data.referenceLien=this.value; updateNextButton()">`;
   }
 
   document.getElementById('stepContent').innerHTML = html;
@@ -1152,19 +1884,20 @@ function resetPhoto() {
 
 function renderStep8() {
   const prix = ['150 € — 250 €', '250 € — 500 €', '500 € — 1 000 €', '1 000 € — 1 500 €', '1 500 € — 2 000 €', 'Plus de 2 000 €'];
+  const precisLabel = currentLang === 'fr' ? 'Précision' : (currentLang === 'en' ? 'Precision' : (currentLang === 'es' ? 'Precisión' : 'Präzisierung'));
   let html = `
-    <h2 class="step-title">Votre <em>budget</em>.</h2>
-    <p class="step-desc">Indiquez la fourchette qui vous correspond.</p>
+    <h2 class="step-title">${t('step8-title')}</h2>
+    <p class="step-desc">${t('step8-desc')}</p>
     <div class="cards-grid grid-3" style="margin-bottom: 24px;">
   `;
-  prix.forEach(t => {
-    html += `<div class="card ${data.prix === t ? 'selected' : ''}" onclick="data.prix='${t}'; renderStep()"><div class="card-title">${t}</div></div>`;
+  prix.forEach(p => {
+    html += `<div class="card ${data.prix === p ? 'selected' : ''}" onclick="data.prix='${p.replace(/'/g, "\\'")}'; renderStep()"><div class="card-title">${p}</div></div>`;
   });
   html += '</div>';
   if (data.prix === 'Plus de 2 000 €') {
     html += `
-      <div class="step-label" style="margin-bottom: 8px;">Précision</div>
-      <input type="text" class="input" placeholder="Ex : jusqu'à 3 500 €, jusqu'à 5 000 €..." value="${data.prixPrecision}" oninput="data.prixPrecision=this.value">
+      <div class="step-label" style="margin-bottom: 8px;">${precisLabel}</div>
+      <input type="text" class="input" placeholder="${t('step8-precise-ph')}" value="${data.prixPrecision}" oninput="data.prixPrecision=this.value">
     `;
   }
   document.getElementById('stepContent').innerHTML = html;
@@ -1172,26 +1905,32 @@ function renderStep8() {
 
 function renderStep9() {
   if (!aHorsCatalogue()) {
+    const stepSkip = currentLang === 'fr' ? '◆ Étape passée' : (currentLang === 'en' ? '◆ Step skipped' : (currentLang === 'es' ? '◆ Paso omitido' : '◆ Schritt übersprungen'));
+    const stepSkipMsg = currentLang === 'fr' ? "Vos marques sélectionnées sont disponibles en boutique,<br>nous traiterons votre demande sans délai d'attente."
+      : currentLang === 'en' ? 'Your selected brands are available in store,<br>we will process your request without delay.'
+      : currentLang === 'es' ? 'Tus marcas seleccionadas están disponibles en boutique,<br>procesaremos tu solicitud sin demora.'
+      : 'Ihre ausgewählten Marken sind im Laden erhältlich,<br>wir bearbeiten Ihre Anfrage ohne Verzögerung.';
     document.getElementById('stepContent').innerHTML = `
       <div class="center" style="padding: 60px 20px;">
-        <div class="cormorant" style="font-size: 2rem; color: #e4c989; font-style: italic; margin-bottom: 20px;">◆ Étape passée</div>
-        <p class="cormorant" style="font-size: 1.2rem; color: #d8cfc1; font-style: italic;">
-          Vos marques sélectionnées sont disponibles en boutique,<br>
-          nous traiterons votre demande sans délai d'attente.
-        </p>
+        <div class="cormorant" style="font-size: 2rem; color: #e4c989; font-style: italic; margin-bottom: 20px;">${stepSkip}</div>
+        <p class="cormorant" style="font-size: 1.2rem; color: #d8cfc1; font-style: italic;">${stepSkipMsg}</p>
       </div>
     `;
     data.delai = 'N/A';
     return;
   }
   const delais = ['Pas pressée', 'Sous 2 semaines', 'Sous 1 mois', 'Pour une date précise'];
+  const delaisLang = currentLang === 'fr' ? delais
+    : currentLang === 'en' ? ['No rush', 'Within 2 weeks', 'Within 1 month', 'For a specific date']
+    : currentLang === 'es' ? ['Sin prisa', 'En 2 semanas', 'En 1 mes', 'Para una fecha precisa']
+    : ['Keine Eile', 'Innerhalb 2 Wochen', 'Innerhalb 1 Monat', 'Für ein bestimmtes Datum'];
   let html = `
-    <h2 class="step-title">Votre <em>délai</em> ?</h2>
-    <p class="step-desc">Pour les pièces exclusives, le délai d'approvisionnement varie. Indiquez votre préférence.</p>
+    <h2 class="step-title">${t('step9-title')}</h2>
+    <p class="step-desc">${t('step9-desc')}</p>
     <div class="cards-grid grid-3">
   `;
-  delais.forEach(t => {
-    html += `<div class="card ${data.delai === t ? 'selected' : ''}" onclick="data.delai='${t}'; renderStep()"><div class="card-title">${t}</div></div>`;
+  delais.forEach((frVal, i) => {
+    html += `<div class="card ${data.delai === frVal ? 'selected' : ''}" onclick="data.delai='${frVal.replace(/'/g, "\\'")}'; renderStep()"><div class="card-title">${delaisLang[i]}</div></div>`;
   });
   html += '</div>';
   if (data.delai === 'Pour une date précise') {
@@ -1201,17 +1940,19 @@ function renderStep9() {
 }
 
 function renderStep10() {
+  const stdDesc = currentLang === 'fr' ? '3 à 7 jours ouvrés' : (currentLang === 'en' ? '3 to 7 working days' : (currentLang === 'es' ? '3 a 7 días laborables' : '3 bis 7 Werktage'));
+  const expDesc = currentLang === 'fr' ? '2 à 4 jours ouvrés' : (currentLang === 'en' ? '2 to 4 working days' : (currentLang === 'es' ? '2 a 4 días laborables' : '2 bis 4 Werktage'));
   document.getElementById('stepContent').innerHTML = `
-    <h2 class="step-title">Votre <em>livraison</em>.</h2>
-    <p class="step-desc">Standard ou express, c'est vous qui décidez.</p>
+    <h2 class="step-title">${t('step10-title')}</h2>
+    <p class="step-desc">${t('step10-desc')}</p>
     <div class="cards-grid grid-2">
       <div class="card ${data.livraison === 'Standard' ? 'selected' : ''}" onclick="data.livraison='Standard'; renderStep()">
         <div class="card-title" style="font-size: 1.5rem;">Standard</div>
-        <div class="card-desc">3 à 7 jours ouvrés</div>
+        <div class="card-desc">${stdDesc}</div>
       </div>
       <div class="card ${data.livraison === 'Express' ? 'selected' : ''}" onclick="data.livraison='Express'; renderStep()">
         <div class="card-title" style="font-size: 1.5rem;">Express</div>
-        <div class="card-desc">2 à 4 jours ouvrés</div>
+        <div class="card-desc">${expDesc}</div>
       </div>
     </div>
   `;
@@ -1221,43 +1962,69 @@ function renderStep11() {
   let info = '';
   let infoBox = '';
 
+  // Messages selon le cas (traduits)
+  const msgExcOnly = currentLang === 'fr' ? "Pour vos pièces exclusives, le paiement s'effectue hors site."
+    : currentLang === 'en' ? 'For your exclusive pieces, payment is made off-site.'
+    : currentLang === 'es' ? 'Para tus piezas exclusivas, el pago se realiza fuera del sitio.'
+    : 'Für Ihre exklusiven Stücke erfolgt die Zahlung extern.';
+
+  const msgMix = currentLang === 'fr' ? "Le paiement s'effectuera directement sur le site, sauf pour les pièces exclusives qui seront réglées hors site."
+    : currentLang === 'en' ? 'Payment will be made directly on the site, except for exclusive pieces which will be settled off-site.'
+    : currentLang === 'es' ? 'El pago se realizará directamente en el sitio, excepto para las piezas exclusivas que se pagarán fuera del sitio.'
+    : 'Die Zahlung erfolgt direkt auf der Website, außer für exklusive Stücke, die extern beglichen werden.';
+
+  const msgStd = currentLang === 'fr' ? "Le paiement s'effectuera directement sur le site."
+    : currentLang === 'en' ? 'Payment will be made directly on the site.'
+    : currentLang === 'es' ? 'El pago se realizará directamente en el sitio.'
+    : 'Die Zahlung erfolgt direkt auf der Website.';
+
+  const boxExcOnly = currentLang === 'fr' ? '✦ Vos pièces étant exclusives, le paiement se fait hors site de manière sécurisée. Vous avez la possibilité de payer en plusieurs fois.'
+    : currentLang === 'en' ? '✦ Since your pieces are exclusive, payment is made off-site securely. You have the option to pay in instalments.'
+    : currentLang === 'es' ? '✦ Al ser piezas exclusivas, el pago se realiza fuera del sitio de manera segura. Tienes la posibilidad de pagar en varias veces.'
+    : '✦ Da Ihre Stücke exklusiv sind, erfolgt die Zahlung extern sicher. Sie haben die Möglichkeit, in Raten zu zahlen.';
+
   if (toutesHorsCatalogue()) {
-    info = "Pour vos pièces exclusives, le paiement s'effectue hors site.";
-    infoBox = `<div class="info-box">✦ Vos pièces étant exclusives, le paiement se fait hors site de manière sécurisée. Vous avez la possibilité de payer en plusieurs fois.</div>`;
+    info = msgExcOnly;
+    infoBox = `<div class="info-box">${boxExcOnly}</div>`;
   } else if (aHorsCatalogue() && aMixte()) {
-    info = "Le paiement s'effectuera directement sur le site, sauf pour les pièces exclusives qui seront réglées hors site.";
+    info = msgMix;
   } else {
-    info = "Le paiement s'effectuera directement sur le site.";
+    info = msgStd;
   }
 
+  // Labels descriptifs des moyens de paiement
+  const onSite = currentLang === 'fr' ? 'Sur le site' : (currentLang === 'en' ? 'On the site' : (currentLang === 'es' ? 'En el sitio' : 'Auf der Website'));
+  const revolutDesc = currentLang === 'fr' ? 'Paiement sécurisé en plusieurs fois' : (currentLang === 'en' ? 'Secure payment in instalments' : (currentLang === 'es' ? 'Pago seguro en varias veces' : 'Sichere Zahlung in Raten'));
+  const aDiscDesc = currentLang === 'fr' ? 'Avec vous' : (currentLang === 'en' ? 'With you' : (currentLang === 'es' ? 'Contigo' : 'Mit Ihnen'));
+  const aDiscLabel = currentLang === 'fr' ? 'À discuter' : (currentLang === 'en' ? 'To discuss' : (currentLang === 'es' ? 'A discutir' : 'Zu besprechen'));
+
   let html = `
-    <h2 class="step-title">Votre <em>paiement</em>.</h2>
+    <h2 class="step-title">${t('step11-title')}</h2>
     <p class="step-desc">${info}</p>
     ${infoBox}
   `;
 
   html += '<div class="cards-grid grid-3">';
-
   html += `
     <div class="card ${data.paiement === 'Carte Visa' ? 'selected' : ''}" onclick="data.paiement='Carte Visa'; renderStep()">
       <div class="card-title">Carte Visa</div>
-      <div class="card-desc">Sur le site</div>
+      <div class="card-desc">${onSite}</div>
     </div>
     <div class="card ${data.paiement === 'Apple Pay' ? 'selected' : ''}" onclick="data.paiement='Apple Pay'; renderStep()">
       <div class="card-title">Apple Pay</div>
-      <div class="card-desc">Sur le site</div>
+      <div class="card-desc">${onSite}</div>
     </div>
     <div class="card ${data.paiement === 'PayPal' ? 'selected' : ''}" onclick="data.paiement='PayPal'; renderStep()">
       <div class="card-title">PayPal</div>
-      <div class="card-desc">Sur le site</div>
+      <div class="card-desc">${onSite}</div>
     </div>
     <div class="card ${data.paiement === 'Revolut Pay' ? 'selected' : ''}" onclick="data.paiement='Revolut Pay'; renderStep()">
       <div class="card-title">Revolut Pay</div>
-      <div class="card-desc" style="color: #e4c989; font-style: italic;">Paiement sécurisé en plusieurs fois</div>
+      <div class="card-desc" style="color: #e4c989; font-style: italic;">${revolutDesc}</div>
     </div>
     <div class="card ${data.paiement === 'À discuter' ? 'selected' : ''}" onclick="data.paiement='À discuter'; renderStep()">
-      <div class="card-title">À discuter</div>
-      <div class="card-desc">Avec vous</div>
+      <div class="card-title">${aDiscLabel}</div>
+      <div class="card-desc">${aDiscDesc}</div>
     </div>
   `;
   html += '</div>';
@@ -1266,22 +2033,48 @@ function renderStep11() {
 
 function renderStep12() {
   const visibilites = ['Post commun sur réseaux', 'Apparaître sur le site Serenvo', 'Aucune visibilité — discret'];
+  const visibilitesLang = currentLang === 'fr' ? visibilites
+    : currentLang === 'en' ? ['Joint social media post', 'Appear on the Serenvo site', 'No visibility — discreet']
+    : currentLang === 'es' ? ['Publicación conjunta en redes', 'Aparecer en el sitio Serenvo', 'Sin visibilidad — discreto']
+    : ['Gemeinsamer Social-Media-Beitrag', 'Auf der Serenvo-Website erscheinen', 'Keine Sichtbarkeit — diskret'];
+
   const sources = ['Instagram', 'TikTok', 'Bouche à oreille', 'Recherche Google', 'Autre'];
+  const sourcesLang = currentLang === 'fr' ? sources
+    : currentLang === 'en' ? ['Instagram', 'TikTok', 'Word of mouth', 'Google search', 'Other']
+    : currentLang === 'es' ? ['Instagram', 'TikTok', 'Boca a boca', 'Búsqueda Google', 'Otro']
+    : ['Instagram', 'TikTok', 'Mundpropaganda', 'Google-Suche', 'Andere'];
+
+  const visiLabel = currentLang === 'fr' ? 'Visibilité communauté (optionnel)'
+    : currentLang === 'en' ? 'Community visibility (optional)'
+    : currentLang === 'es' ? 'Visibilidad comunidad (opcional)'
+    : 'Sichtbarkeit Gemeinschaft (optional)';
+  const visiSubtext = currentLang === 'fr' ? 'Souhaitez-vous valoriser votre acquisition avec nous ?'
+    : currentLang === 'en' ? 'Would you like to highlight your acquisition with us?'
+    : currentLang === 'es' ? '¿Te gustaría destacar tu adquisición con nosotros?'
+    : 'Möchten Sie Ihre Anschaffung mit uns hervorheben?';
+  const sourceLabel = currentLang === 'fr' ? 'Comment nous avez-vous connus ?'
+    : currentLang === 'en' ? 'How did you hear about us?'
+    : currentLang === 'es' ? '¿Cómo nos conociste?'
+    : 'Wie haben Sie von uns erfahren?';
+  const messageLabel = currentLang === 'fr' ? 'Un message à nous transmettre ? (optionnel)'
+    : currentLang === 'en' ? 'A message to share with us? (optional)'
+    : currentLang === 'es' ? '¿Un mensaje para transmitirnos? (opcional)'
+    : 'Eine Nachricht für uns? (optional)';
 
   let html = `
-    <h2 class="step-title">Quelques <em>dernières finitions</em>.</h2>
-    <p class="step-desc">Pour parfaire votre expérience.</p>
+    <h2 class="step-title">${t('step12-title')}</h2>
+    <p class="step-desc">${t('step12-desc')}</p>
 
     <div style="margin-bottom: 32px;">
-      <div class="step-label" style="margin-bottom: 12px;">Visibilité communauté (optionnel)</div>
-      <p style="color: #8a8278; margin-bottom: 16px; font-size: 0.85rem; font-style: italic;">Souhaitez-vous valoriser votre acquisition avec nous ?</p>
+      <div class="step-label" style="margin-bottom: 12px;">${visiLabel}</div>
+      <p style="color: #8a8278; margin-bottom: 16px; font-size: 0.85rem; font-style: italic;">${visiSubtext}</p>
       <div class="checkbox-list">
   `;
-  visibilites.forEach(v => {
-    const sel = data.visibilite.includes(v) ? 'selected' : '';
-    html += `<div class="checkbox-card ${sel}" onclick="toggleVisibilite('${v.replace(/'/g, "\\'")}')">
+  visibilites.forEach((frVal, i) => {
+    const sel = data.visibilite.includes(frVal) ? 'selected' : '';
+    html += `<div class="checkbox-card ${sel}" onclick="toggleVisibilite('${frVal.replace(/'/g, "\\'")}')">
       <div class="checkbox-box"></div>
-      <span class="checkbox-label">${v}</span>
+      <span class="checkbox-label">${visibilitesLang[i]}</span>
     </div>`;
   });
   html += `
@@ -1289,21 +2082,21 @@ function renderStep12() {
     </div>
 
     <div style="margin-bottom: 32px;">
-      <div class="step-label" style="margin-bottom: 12px;">Comment nous avez-vous connus ?</div>
+      <div class="step-label" style="margin-bottom: 12px;">${sourceLabel}</div>
       <div class="cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;">
   `;
-  sources.forEach(s => {
-    html += `<div class="card ${data.sourceConnaissance === s ? 'selected' : ''}" style="padding: 14px 12px;" onclick="data.sourceConnaissance='${s}'; renderStep()"><div style="font-size: 0.9rem; color: #f8f3ea;">${s}</div></div>`;
+  sources.forEach((frVal, i) => {
+    html += `<div class="card ${data.sourceConnaissance === frVal ? 'selected' : ''}" style="padding: 14px 12px;" onclick="data.sourceConnaissance='${frVal}'; renderStep()"><div style="font-size: 0.9rem; color: #f8f3ea;">${sourcesLang[i]}</div></div>`;
   });
   html += '</div>';
   if (data.sourceConnaissance === 'Autre') {
-    html += `<input type="text" class="input selected-precision-input" placeholder="Précisez..." value="${data.sourcePrecision}" oninput="data.sourcePrecision=this.value">`;
+    html += `<input type="text" class="input selected-precision-input" placeholder="${t('step12-source-other-ph')}" value="${data.sourcePrecision}" oninput="data.sourcePrecision=this.value">`;
   }
   html += `</div>
 
     <div>
-      <div class="step-label" style="margin-bottom: 12px;">Un message à nous transmettre ? (optionnel)</div>
-      <textarea class="textarea" placeholder="Une référence précise vue ailleurs, un détail important, une attente particulière..." oninput="data.messageLibre=this.value">${data.messageLibre}</textarea>
+      <div class="step-label" style="margin-bottom: 12px;">${messageLabel}</div>
+      <textarea class="textarea" placeholder="${t('step12-message-ph')}" oninput="data.messageLibre=this.value">${data.messageLibre}</textarea>
     </div>
   `;
   document.getElementById('stepContent').innerHTML = html;
@@ -1329,29 +2122,76 @@ function goToRecap() {
   document.getElementById('recapName').textContent = `${data.prenom} ${data.nom}`;
   document.getElementById('recapNumeroFooter').textContent = demandeNumero;
 
-  // Construit la fiche
+  rebuildRecap();
+  goToScreen('recap');
+}
+
+// Reconstruit toute la page recap avec les traductions actuelles
+function rebuildRecap() {
+  // Titre principal
+  const recapTitle = document.querySelector('.recap-title');
+  if (recapTitle) {
+    const merciText = currentLang === 'fr' ? 'Merci' : (currentLang === 'en' ? 'Thank you' : (currentLang === 'es' ? 'Gracias' : 'Vielen Dank'));
+    const confianceText = currentLang === 'fr' ? 'pour votre confiance.' : (currentLang === 'en' ? 'for your trust.' : (currentLang === 'es' ? 'por tu confianza.' : 'für Ihr Vertrauen.'));
+    recapTitle.innerHTML = `${merciText}, <em id="recapPrenom">${data.prenom}</em>,<br>${confianceText}`;
+  }
+
+  // Description
+  const recapDesc = document.querySelector('.recap-desc');
+  if (recapDesc) {
+    const desc = currentLang === 'fr' ? 'Votre demande personnalisée a été soigneusement préparée.<br>Nous vous répondrons sous 24h avec une sélection sur-mesure, pensée pour vous.'
+      : currentLang === 'en' ? 'Your personalized request has been carefully prepared.<br>We will respond within 24h with a tailor-made selection, designed for you.'
+      : currentLang === 'es' ? 'Tu solicitud personalizada ha sido preparada con cuidado.<br>Te responderemos en 24h con una selección a medida, pensada para ti.'
+      : 'Ihre personalisierte Anfrage wurde sorgfältig vorbereitet.<br>Wir antworten innerhalb von 24 Stunden mit einer maßgeschneiderten Auswahl, für Sie konzipiert.';
+    recapDesc.innerHTML = desc;
+  }
+
+  // Label "Demande référencée"
+  const numBoxLabel = document.querySelector('.demande-num-box .step-label');
+  if (numBoxLabel) numBoxLabel.textContent = t('final-ref');
+
+  // Construit la fiche avec labels traduits
+  const labels = {
+    'Type de produit': t('recap-product'),
+    'Occasion': t('recap-occasion'),
+    'Style esthétique': t('recap-design'),
+    'Maisons souhaitées': t('recap-marques'),
+    'Couleurs': t('recap-couleur'),
+    'Référence visuelle': t('recap-reference'),
+    'Budget': t('recap-prix'),
+    'Délai souhaité': t('recap-delai'),
+    'Livraison': t('recap-livraison'),
+    'Paiement': t('recap-paiement'),
+    'Visibilité communauté': t('recap-visibilite'),
+    'Source': t('recap-source'),
+    'Message personnel': t('recap-message')
+  };
+
+  // Surprenez-moi traduit
+  const surpriseTrad = currentLang === 'fr' ? 'Surprenez-moi' : (currentLang === 'en' ? 'Surprise me' : (currentLang === 'es' ? 'Sorpréndeme' : 'Überraschen Sie mich'));
+
   let fiche = '';
   const sections = [
-    ['Type de produit', data.typeProduit],
-    ['Occasion', data.occasion],
-    ['Style esthétique', data.design + (data.designAutre ? ` — ${data.designAutre}` : '')],
-    ['Maisons souhaitées', data.marques.join(' · ') || 'Surprenez-moi'],
-    ['Couleurs', data.couleurType + (data.couleurPrecision ? ` — ${data.couleurPrecision}` : '')],
-    ['Référence visuelle', data.referenceVisuelle + (data.referenceLien ? ` — ${data.referenceLien}` : '') + (photoFile ? ` · Photo : ${photoFile.name}` : '')],
-    ['Budget', data.prix + (data.prixPrecision ? ` — ${data.prixPrecision}` : '')]
+    [labels['Type de produit'], data.typeProduit],
+    [labels['Occasion'], data.occasion],
+    [labels['Style esthétique'], data.design + (data.designAutre ? ` — ${data.designAutre}` : '')],
+    [labels['Maisons souhaitées'], data.marques.join(' · ') || surpriseTrad],
+    [labels['Couleurs'], data.couleurType + (data.couleurPrecision ? ` — ${data.couleurPrecision}` : '')],
+    [labels['Référence visuelle'], data.referenceVisuelle + (data.referenceLien ? ` — ${data.referenceLien}` : '') + (photoFile ? ` · Photo : ${photoFile.name}` : '')],
+    [labels['Budget'], data.prix + (data.prixPrecision ? ` — ${data.prixPrecision}` : '')]
   ];
 
   if (aHorsCatalogue() && data.delai && data.delai !== 'N/A') {
-    sections.push(['Délai souhaité', data.delai + (data.delaiDate ? ` — ${data.delaiDate}` : '')]);
+    sections.push([labels['Délai souhaité'], data.delai + (data.delaiDate ? ` — ${data.delaiDate}` : '')]);
   }
-  sections.push(['Livraison', data.livraison]);
-  sections.push(['Paiement', data.paiement]);
+  sections.push([labels['Livraison'], data.livraison]);
+  sections.push([labels['Paiement'], data.paiement]);
   if (data.visibilite.length > 0) {
-    sections.push(['Visibilité communauté', data.visibilite.join(' · ')]);
+    sections.push([labels['Visibilité communauté'], data.visibilite.join(' · ')]);
   }
-  sections.push(['Source', data.sourceConnaissance + (data.sourcePrecision ? ` — ${data.sourcePrecision}` : '')]);
+  sections.push([labels['Source'], data.sourceConnaissance + (data.sourcePrecision ? ` — ${data.sourcePrecision}` : '')]);
   if (data.messageLibre) {
-    sections.push(['Message personnel', `« ${data.messageLibre} »`]);
+    sections.push([labels['Message personnel'], `« ${data.messageLibre} »`]);
   }
 
   sections.forEach(([label, value]) => {
@@ -1359,7 +2199,48 @@ function goToRecap() {
   });
   document.getElementById('recapFiche').innerHTML = fiche;
 
-  goToScreen('recap');
+  // Section "Transmettez votre demande"
+  const transmitTitle = currentLang === 'fr' ? '◆ Transmettez votre demande' : (currentLang === 'en' ? '◆ Submit your request' : (currentLang === 'es' ? '◆ Transmite tu solicitud' : '◆ Übermitteln Sie Ihre Anfrage'));
+  const transmitLabel = document.querySelector('.send-actions .step-label');
+  if (transmitLabel) transmitLabel.textContent = transmitTitle;
+
+  // Info send action
+  const sendInfoEl = document.querySelector('.send-actions-info');
+  if (sendInfoEl) {
+    const auto = currentLang === 'fr' ? 'automatiquement formatée' : (currentLang === 'en' ? 'automatically formatted' : (currentLang === 'es' ? 'formateada automáticamente' : 'automatisch formatiert'));
+    const sendInfoMsg = currentLang === 'fr' ? `✦ Votre demande complète sera <strong style="color: #e4c989; font-style: normal;">${auto}</strong> dans le message WhatsApp. Un seul clic suffit pour nous l'envoyer.`
+      : currentLang === 'en' ? `✦ Your complete request will be <strong style="color: #e4c989; font-style: normal;">${auto}</strong> in the WhatsApp message. A single click is enough to send it to us.`
+      : currentLang === 'es' ? `✦ Tu solicitud completa será <strong style="color: #e4c989; font-style: normal;">${auto}</strong> en el mensaje WhatsApp. Un solo clic basta para enviárnosla.`
+      : `✦ Ihre vollständige Anfrage wird <strong style="color: #e4c989; font-style: normal;">${auto}</strong> in der WhatsApp-Nachricht. Ein einziger Klick reicht, um sie uns zu senden.`;
+    sendInfoEl.innerHTML = sendInfoMsg;
+  }
+
+  // Bouton WhatsApp
+  const sendBtn = document.querySelector('.send-buttons .btn-primary span');
+  if (sendBtn) sendBtn.textContent = t('send-btn-whatsapp');
+
+  // Conservez votre numéro
+  const conservezEl = document.querySelector('.send-actions p[style*="margin-top: 28px"]');
+  if (conservezEl) {
+    const conservezText = currentLang === 'fr' ? `Conservez votre numéro de demande <strong style="color: #e4c989;" id="recapNumeroFooter">${demandeNumero}</strong> pour le suivi.`
+      : currentLang === 'en' ? `Keep your request number <strong style="color: #e4c989;" id="recapNumeroFooter">${demandeNumero}</strong> for follow-up.`
+      : currentLang === 'es' ? `Conserva tu número de solicitud <strong style="color: #e4c989;" id="recapNumeroFooter">${demandeNumero}</strong> para el seguimiento.`
+      : `Bewahren Sie Ihre Anfragenummer <strong style="color: #e4c989;" id="recapNumeroFooter">${demandeNumero}</strong> für die Nachverfolgung auf.`;
+    conservezEl.innerHTML = conservezText;
+  }
+
+  // Section PDF
+  const pdfPara = document.querySelector('.send-actions p[style*="font-size: 0.8rem"]');
+  if (pdfPara) {
+    const pdfMsg = currentLang === 'fr' ? '◆ Souhaitez-vous garder une trace personnelle de votre demande ?'
+      : currentLang === 'en' ? '◆ Would you like to keep a personal record of your request?'
+      : currentLang === 'es' ? '◆ ¿Te gustaría conservar un recuerdo personal de tu solicitud?'
+      : '◆ Möchten Sie ein persönliches Andenken an Ihre Anfrage behalten?';
+    pdfPara.textContent = pdfMsg;
+  }
+
+  const pdfBtn = document.querySelector('.send-actions .btn-secondary');
+  if (pdfBtn) pdfBtn.textContent = t('send-btn-pdf');
 }
 
 // ============================================================
@@ -1590,79 +2471,82 @@ function getWhatsAppMessage() {
 
   // Si la cliente vient du formulaire d'inscription, on inclut tout en haut
   if (inscription) {
-    msg += `✦ DEMANDE COMPLÈTE SERENVO ✦\n`;
+    msg += `${t('wa-header')}\n`;
     msg += `━━━━━━━━━━━━━━━━━━━\n\n`;
 
-    msg += `🌟 *INSCRIPTION CLIENTE SIGNATURE*\n`;
-    msg += `Référence : ${inscription.demandeNumero}\n\n`;
+    msg += `${t('wa-inscription')}\n`;
+    msg += `${t('wa-reference')} ${inscription.demandeNumero}\n\n`;
     msg += `👤 *${inscription.prenom} ${inscription.nom}*\n`;
     msg += `📧 ${inscription.email}\n`;
     msg += `📱 ${inscription.telephone}\n\n`;
-    msg += `✨ Place du luxe : ${inscription.placeLuxe}\n`;
-    msg += `💰 Budget mensuel : ${inscription.budget}\n`;
-    msg += `📅 Fréquence : ${inscription.frequence}\n`;
-    msg += `🎯 Aspect privilégié : ${inscription.aspectProgramme}\n\n`;
-    msg += `💎 *Attentes* :\n"${inscription.attentes}"\n\n`;
+    msg += `${t('wa-place-luxe')} ${inscription.placeLuxe}\n`;
+    msg += `${t('wa-budget-mensuel')} ${inscription.budget}\n`;
+    msg += `${t('wa-frequence')} ${inscription.frequence}\n`;
+    msg += `${t('wa-aspect')} ${inscription.aspectProgramme}\n\n`;
+    msg += `${t('wa-attentes')}\n"${inscription.attentes}"\n\n`;
     if (inscription.precisions) {
-      msg += `📝 *Précisions* :\n"${inscription.precisions}"\n\n`;
+      msg += `${t('wa-precisions')}\n"${inscription.precisions}"\n\n`;
     }
-    msg += `✓ Signature électronique apposée le ${inscription.dateInscription}\n\n`;
+    msg += `${t('wa-signature')} ${inscription.dateInscription}\n\n`;
     msg += `━━━━━━━━━━━━━━━━━━━\n\n`;
   }
 
   // Section demande d'article
-  msg += `🛍️ *DEMANDE D'ARTICLE — ${demandeNumero}*\n`;
+  msg += `${t('wa-demande')} ${demandeNumero}*\n`;
   msg += `━━━━━━━━━━━━━━━━━━━\n\n`;
 
-  msg += `👤 *CLIENTE*\n${data.prenom} ${data.nom}\n\n`;
+  msg += `${t('wa-cliente')}\n${data.prenom} ${data.nom}\n\n`;
 
-  msg += `🛍️ *PRODUIT*\n${data.typeProduit} · ${data.occasion}\n`;
-  msg += `Style : ${data.design}${data.designAutre ? ` (${data.designAutre})` : ''}\n\n`;
+  msg += `${t('wa-produit')}\n${data.typeProduit} · ${data.occasion}\n`;
+  msg += `${t('wa-style')} ${data.design}${data.designAutre ? ` (${data.designAutre})` : ''}\n\n`;
 
-  msg += `✨ *MAISONS SOUHAITÉES*\n${data.marques.join(' · ') || 'Surprenez-moi'}\n\n`;
+  msg += `${t('wa-maisons')}\n${data.marques.join(' · ') || t('wa-surprise')}\n\n`;
 
-  msg += `🎨 *COULEURS*\n${data.couleurType}${data.couleurPrecision ? ` — ${data.couleurPrecision}` : ''}\n\n`;
+  msg += `${t('wa-couleurs')}\n${data.couleurType}${data.couleurPrecision ? ` — ${data.couleurPrecision}` : ''}\n\n`;
 
   if (data.referenceVisuelle && data.referenceVisuelle !== 'Non, je vous fais confiance') {
-    msg += `📸 *RÉFÉRENCE VISUELLE*\n${data.referenceVisuelle}`;
-    if (data.referenceLien) msg += `\nLien : ${data.referenceLien}`;
-    if (photoFile) msg += `\n(Photo à envoyer séparément sur WhatsApp)`;
+    msg += `${t('wa-reference-vis')}\n${data.referenceVisuelle}`;
+    if (data.referenceLien) msg += `\n${t('wa-lien')} ${data.referenceLien}`;
+    if (photoFile) msg += `\n${t('wa-photo-note')}`;
     msg += `\n\n`;
   }
 
-  msg += `💰 *BUDGET*\n${data.prix}${data.prixPrecision ? ` — ${data.prixPrecision}` : ''}\n\n`;
+  msg += `${t('wa-budget')}\n${data.prix}${data.prixPrecision ? ` — ${data.prixPrecision}` : ''}\n\n`;
 
   if (aHorsCatalogue() && data.delai && data.delai !== 'N/A') {
-    msg += `⏱️ *DÉLAI SOUHAITÉ*\n${data.delai}${data.delaiDate ? ` (${data.delaiDate})` : ''}\n\n`;
+    msg += `${t('wa-delai-souhaite')}\n${data.delai}${data.delaiDate ? ` (${data.delaiDate})` : ''}\n\n`;
   }
 
-  msg += `🚚 *LIVRAISON*\n${data.livraison}\n\n`;
+  msg += `${t('wa-livraison')}\n${data.livraison}\n\n`;
 
-  msg += `💳 *PAIEMENT*\n${data.paiement}`;
+  msg += `${t('wa-paiement')}\n${data.paiement}`;
   if (data.paiement === 'Revolut Pay') {
-    msg += ` (paiement externe sécurisé, plusieurs fois possible)`;
+    msg += ` ${t('wa-paiement-revolut')}`;
   } else if (toutesHorsCatalogue() && data.paiement === 'PayPal') {
-    msg += ` (paiement externe sécurisé)`;
+    msg += ` ${t('wa-paiement-paypal')}`;
   }
   msg += `\n\n`;
 
   if (data.visibilite.length > 0) {
-    msg += `📱 *VISIBILITÉ COMMUNAUTÉ*\n${data.visibilite.join(' · ')}\n\n`;
+    msg += `${t('wa-visibilite')}\n${data.visibilite.join(' · ')}\n\n`;
   }
 
-  msg += `🔗 *SOURCE*\n${data.sourceConnaissance}${data.sourcePrecision ? ` — ${data.sourcePrecision}` : ''}\n\n`;
+  msg += `${t('wa-source')}\n${data.sourceConnaissance}${data.sourcePrecision ? ` — ${data.sourcePrecision}` : ''}\n\n`;
 
   if (data.messageLibre) {
-    msg += `💬 *MESSAGE PERSONNEL*\n"${data.messageLibre}"\n\n`;
+    msg += `${t('wa-message-perso')}\n"${data.messageLibre}"\n\n`;
   }
 
   msg += `━━━━━━━━━━━━━━━━━━━\n`;
   if (inscription) {
-    msg += `Inscription Cliente Signature + Demande d'article\n`;
+    msg += `${t('wa-footer-combined')}\n`;
   } else {
-    msg += `Préparée via le simulateur Serenvo\n`;
+    msg += `${t('wa-footer-simple')}\n`;
   }
-  msg += `Le ${new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+  // Format de date selon la langue
+  const localeMap = { fr: 'fr-FR', en: 'en-GB', es: 'es-ES', de: 'de-DE' };
+  const locale = localeMap[currentLang] || 'fr-FR';
+  msg += `${t('wa-the')} ${new Date().toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })}`;
 
   return msg;
 }
@@ -1835,6 +2719,23 @@ window.addEventListener('DOMContentLoaded', () => {
   if (prenomParam) data.prenom = prenomParam;
   if (nomParam) data.nom = nomParam;
 
+  // Récupération de la langue : priorité URL > sessionStorage (inscription) > localStorage > défaut FR
+  let savedLang = 'fr';
+  try {
+    const saved = localStorage.getItem('serenvoLang');
+    if (saved && i18nSim[saved]) savedLang = saved;
+  } catch (e) {}
+  try {
+    const stored = sessionStorage.getItem('serenvoInscription');
+    if (stored) {
+      const insc = JSON.parse(stored);
+      if (insc.lang && i18nSim[insc.lang]) savedLang = insc.lang;
+    }
+  } catch (e) {}
+  const urlLang = urlParams.get('lang');
+  if (urlLang && i18nSim[urlLang]) savedLang = urlLang;
+  setLanguage(savedLang);
+
   // Animation de la ligne dorée du hero
   setTimeout(() => {
     const heroLine = document.querySelector('.hero-line');
@@ -1853,6 +2754,8 @@ window.addEventListener('DOMContentLoaded', () => {
       console.warn('⚠ jsPDF n\'a pas pu être chargé');
     }
   }, 200);
+
+  console.log('✓ Simulateur Serenvo chargé (langue : ' + currentLang + ')');
 });
 </script>
 
